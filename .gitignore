@@ -1,0 +1,19 @@
+# Dependencias
+node_modules/
+
+# Build Next.js
+.next/
+out/
+*.tsbuildinfo
+next-env.d.ts
+
+# Secretos — nunca commitear .env (AGENTS.md + plan §7.1)
+.env*
+!.env.example
+
+# Logs y OS
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.DS_Store
+*.pem
