@@ -1,29 +1,41 @@
 // lib/mail.ts — T-08
 // Helper SMTP Gmail para emails transaccionales (reset + alerta a doctora).
-// Fail fast: sin SMTP_PASS → lanza al importar.
+// Validación lazy: sin SMTP_PASS/SMTP_USER → lanza al primer envío, no al importar.
 
 import * as nodemailer from "nodemailer";
 
-const SMTP_USER = process.env.SMTP_USER;
-const SMTP_PASS = process.env.SMTP_PASS;
-const SMTP_FROM = process.env.SMTP_FROM;
-const DOCTOR_EMAIL = process.env.DOCTOR_EMAIL;
+let cachedTransporter: nodemailer.Transporter | null = null;
 
-if (!SMTP_PASS) {
-  throw new Error("mail.ts: falta SMTP_PASS en process.env");
+function getTransporter(): nodemailer.Transporter {
+  const SMTP_USER = process.env.SMTP_USER;
+  const SMTP_PASS = process.env.SMTP_PASS;
+
+  if (!SMTP_USER) {
+    throw new Error("mail.ts: falta SMTP_USER en process.env");
+  }
+  if (!SMTP_PASS) {
+    throw new Error("mail.ts: falta SMTP_PASS en process.env");
+  }
+
+  if (!cachedTransporter) {
+    cachedTransporter = nodemailer.createTransport({
+      host: "smtp.gmail.com",
+      port: 587,
+      secure: false,
+      auth: {
+        user: SMTP_USER,
+        pass: SMTP_PASS,
+      },
+    });
+  }
+
+  return cachedTransporter;
 }
 
-const transporter = nodemailer.createTransport({
-  host: "smtp.gmail.com",
-  port: 587,
-  secure: false,
-  auth: {
-    user: SMTP_USER,
-    pass: SMTP_PASS,
-  },
-});
-
 export async function sendResetEmail(to: string, resetUrl: string): Promise<void> {
+  const SMTP_FROM = process.env.SMTP_FROM;
+  const transporter = getTransporter();
+
   await transporter.sendMail({
     from: SMTP_FROM,
     to,
@@ -43,6 +55,10 @@ export async function sendNewPatientAlert(
   patientName: string,
   motivo: string
 ): Promise<void> {
+  const SMTP_FROM = process.env.SMTP_FROM;
+  const DOCTOR_EMAIL = process.env.DOCTOR_EMAIL;
+  const transporter = getTransporter();
+
   if (!DOCTOR_EMAIL) {
     throw new Error("mail.ts: falta DOCTOR_EMAIL en process.env");
   }
