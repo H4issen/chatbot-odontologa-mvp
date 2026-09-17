@@ -5,16 +5,14 @@ import { getIronSession, SessionOptions } from "iron-session";
 import * as bcrypt from "bcrypt";
 import { sessionConfig } from "./session.config";
 
-const SESSION_SECRET = process.env.SESSION_SECRET;
-if (!SESSION_SECRET) {
-  throw new Error("auth.ts: falta SESSION_SECRET en process.env");
-}
-
 export interface SessionData {
   userId: number;
 }
 
 export async function getSession(req: Request): Promise<SessionData | null> {
+  if (!process.env.SESSION_SECRET) {
+    throw new Error("auth.ts: falta SESSION_SECRET en process.env");
+  }
   const session = await getIronSession<SessionData>(req, new Response(), sessionConfig as SessionOptions);
   return session.userId ? { userId: session.userId } : null;
 }
