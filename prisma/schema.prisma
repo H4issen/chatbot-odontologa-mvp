@@ -1,0 +1,110 @@
+// prisma/schema.prisma
+// T-02: Schema Prisma — 3 enums + 7 modelos
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─── ENUMS ───────────────────────────────────────────────────────────────────
+
+enum TipoContacto {
+  referido
+  conocido
+  empresa
+}
+
+enum Consentimiento {
+  pendiente
+  aceptado
+  rechazado
+}
+
+enum EstadoPaciente {
+  nuevo
+  registrado
+  citado_externo
+  archivado
+}
+
+// ─── MODELOS ─────────────────────────────────────────────────────────────────
+
+model Paciente {
+  phone_number        String           @id                  // wa_id; nunca se pregunta al paciente
+  nombre              String?          @db.VarChar(500)     // NULL hasta consentimiento aceptado
+  tipo_contacto       TipoContacto?
+  doctor_referidor_id Int?
+  doctor_referidor    DoctorReferidor? @relation(fields: [doctor_referidor_id], references: [id])
+  consentimiento      Consentimiento   @default(pendiente)
+  consentimiento_at   DateTime?
+  last_patient_msg_at DateTime?                             // actualizar en cada msg entrante
+  estado              EstadoPaciente   @default(nuevo)
+  bot_state           String           @default("BIENVENIDA") // estado actual máquina de estados
+  created_at          DateTime         @default(now())
+  updated_at          DateTime         @updatedAt
+
+  consultas Consulta[]
+}
+
+// [RIESGO] phone_number como PK: si el paciente cambia número, rompe FK.
+// Es exigencia de spec §3. Se documenta; sin solución alternativa en MVP.
+
+model Consulta {
+  id                  Int      @id @default(autoincrement())
+  paciente_phone      String
+  paciente            Paciente @relation(fields: [paciente_phone], references: [phone_number])
+  motivo_reportado    String?  @db.Text
+  servicio_interes    String?  @db.VarChar(100)
+  diagnostico_doctora String?  @db.Text                    // solo la doctora lo escribe desde el panel
+  created_at          DateTime @default(now())
+}
+
+model DoctorReferidor {
+  id         Int      @id @default(autoincrement())
+  codigo_qr  String   @unique                              // ej. DR_GARCIA_042
+  nombre     String
+  created_at DateTime @default(now())
+
+  pacientes Paciente[]
+}
+
+model Servicio {
+  id                Int      @id @default(autoincrement())
+  slug              String   @unique                       // corona|limpieza|blanqueamiento|brackets|implante
+  nombre            String
+  descripcion_corta String   @db.VarChar(300)
+  precio_desde      String?                                // NULL = sin precio cerrado (spec §3)
+  updated_at        DateTime @updatedAt
+}
+
+model ConsultorioInfo {
+  id                 Int      @id @default(1)              // siempre exactamente 1 fila
+  direccion_texto    String
+  maps_url           String
+  horarios_texto     String
+  scheduling_app_url String?                               // NULL en plan gratuito consultorio.me
+  updated_at         DateTime @updatedAt
+}
+
+model UsuarioAdmin {
+  id             Int       @id @default(autoincrement())
+  email          String    @unique
+  password_hash  String                                    // bcrypt cost 12; nunca texto plano
+  reset_token    String?   @unique
+  reset_token_at DateTime?
+  created_at     DateTime  @default(now())
+}
+
+model LogWebhook {
+  id         Int      @id @default(autoincrement())
+  at         DateTime @default(now())
+  wa_id      String
+  event_type String                                        // message|status|etc.
+  error      String?  @db.Text
+  // NOTA: NO se guarda payload completo. Puede contener datos de salud (spec §13 + AGENTS.md).
+  // Solo metadata: wa_id + event_type + error.
+}
