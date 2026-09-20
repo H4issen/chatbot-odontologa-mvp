@@ -4,6 +4,7 @@
 
 import { prisma } from "../prisma";
 import { sendNewPatientAlert } from "../mail";
+import { matchKeyword } from "./keywords";
 import {
   MENSAJE_BIENVENIDA,
   MENSAJE_CONSENTIMIENTO,
@@ -12,6 +13,10 @@ import {
   MENSAJE_SOLICITUD_MOTIVO,
   MENSAJE_RECHAZADO,
   MENSAJE_CIERRE_HORARIO,
+  MENSAJE_DIRECCION,
+  MENSAJE_HORARIO,
+  DISCLAIMER_SERVICIO,
+  MENSAJE_RECURRENTE,
   buildMessage,
 } from "./messages";
 
@@ -57,6 +62,8 @@ export async function handleMessage(waId: string, rawText: string): Promise<stri
       return handleNombre(paciente, text);
     case "MOTIVO":
       return handleMotivo(paciente, text);
+    case "CIERRE":
+      return handleCierre(paciente, text);
     default:
       return handleBienvenida(paciente, text);
   }
@@ -209,4 +216,61 @@ async function handleMotivo(paciente: Paciente, text: string): Promise<string> {
   });
 
   return MENSAJE_CIERRE_HORARIO;
+}
+
+async function handleCierre(paciente: Paciente, text: string): Promise<string> {
+  const keyword = matchKeyword(text);
+
+  if (keyword === "direccion") {
+    const info = await prisma.consultorioInfo.findUnique({ where: { id: 1 } });
+    if (!info) {
+      return "Lo siento, no tengo la información de dirección disponible en este momento.";
+    }
+    return buildMessage(MENSAJE_DIRECCION, {
+      direccion_texto: info.direccion_texto,
+      maps_url: info.maps_url,
+    });
+  }
+
+  if (keyword === "horario") {
+    const info = await prisma.consultorioInfo.findUnique({ where: { id: 1 } });
+    if (!info) {
+      return "Lo siento, no tengo la información de horarios disponible en este momento.";
+    }
+    return buildMessage(MENSAJE_HORARIO, {
+      horarios_texto: info.horarios_texto,
+    });
+  }
+
+  if (keyword === "servicio") {
+    const textLower = text.toLowerCase();
+    const serviceSlugs = ["corona", "limpieza", "blanqueamiento", "brackets", "implante"];
+    const matchedSlug = serviceSlugs.find((slug) => textLower.includes(slug));
+
+    if (matchedSlug) {
+      const servicio = await prisma.servicio.findUnique({ where: { slug: matchedSlug } });
+      if (servicio) {
+        // Sanitize: remove "diagnóstico" from description if present (data quality issue from seed)
+        const descripcionLimpia = servicio.descripcion_corta
+          .replace(/diagnóstico/gi, "")
+          .replace(/\s+/g, " ")
+          .trim();
+        return `${descripcionLimpia} ${DISCLAIMER_SERVICIO}`;
+      }
+    }
+
+    // Si no se encontró un servicio específico, listar opciones
+    return `Puedo orientarle sobre nuestros servicios: corona, limpieza, blanqueamiento, brackets, implante. ¿Sobre cuál le gustaría saber más?`;
+  }
+
+  // Cualquier otro texto → avanzar a RECURRENTE
+  await prisma.paciente.update({
+    where: { phone_number: paciente.phone_number },
+    data: { bot_state: "RECURRENTE" },
+  });
+
+  return buildMessage(MENSAJE_RECURRENTE, {
+    Nombre: paciente.nombre ?? "paciente",
+    ultimo_motivo: "su consulta anterior",
+  });
 }
