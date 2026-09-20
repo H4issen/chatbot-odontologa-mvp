@@ -1,9 +1,10 @@
-// app/api/whatsapp/route.ts — T-11 (GET) + T-12 (POST)
+// app/api/whatsapp/route.ts — T-11 (GET) + T-12 (POST) + T-21 (processWebhook)
 // GET: verificación inicial de Meta (handshake único al registrar el webhook).
 // POST: firma HMAC-SHA256 timing-safe, rate-limit por wa_id, ack inmediato y despacho background.
 
 import { isRateLimited } from "../../../lib/ratelimit";
 import { verifySignature, extractWaId, logWebhookEvent } from "../../../lib/webhook";
+import { processWebhook } from "../../../lib/bot/processor";
 
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
@@ -41,30 +42,28 @@ export async function POST(req: Request) {
   try {
     body = JSON.parse(rawBody);
   } catch {
-    await logWebhookEvent(null, "parse_error", "JSON inválido");
-    return new Response("Bad Request", { status: 400 });
+    // Deuda T-12 resuelta: JSON inválido → 200 silencioso + log (evita loop de reintentos de Meta)
+    await logWebhookEvent(null, "invalid_json", "JSON inválido");
+    return new Response("OK", { status: 200 });
   }
 
   const waId = extractWaId(body);
 
-  // 4. Rate-limit 30/min por wa_id → 200 silencioso si excede (Meta no reintenta)
-  if (waId && isRateLimited(waId, 30, 60_000)) {
+  // 4. Status callback (waId null) → skip silencioso, sin rate-limit
+  if (!waId) {
+    await logWebhookEvent(null, "status");
     return new Response("OK", { status: 200 });
   }
 
-  // 5. Procesar en background (sin await) + ACK inmediato (< 5s o Meta reintenta)
+  // 5. Rate-limit 30/min por wa_id → 200 silencioso si excede (Meta no reintenta)
+  if (isRateLimited(waId, 30, 60_000)) {
+    return new Response("OK", { status: 200 });
+  }
+
+  // 6. Procesar en background (sin await) + ACK inmediato (< 5s o Meta reintenta)
   processWebhook(body, waId).catch((e) =>
     logWebhookEvent(waId, "process_error", (e as Error).message)
   );
 
   return new Response("OK", { status: 200 });
-}
-
-// Placeholder hasta T-21 (lib/bot/processor.ts): registra solo metadata del evento.
-// Nunca guarda payload/texto del mensaje: protección de datos de salud (spec §13).
-async function processWebhook(body: unknown, waId: string | null): Promise<void> {
-  const value = (body as { entry?: Array<{ changes?: Array<{ value?: { messages?: unknown[] } }> }> })
-    ?.entry?.[0]?.changes?.[0]?.value;
-  const eventType = value?.messages ? "message" : "status";
-  await logWebhookEvent(waId, eventType);
 }
