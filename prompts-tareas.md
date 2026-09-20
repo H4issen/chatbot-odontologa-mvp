@@ -1,0 +1,74 @@
+# Prompts recortados T-01 a T-49 — chatbot-odontologa-mvp
+
+Regla: adjunta SOLO lo indicado por T. 1 tarea=1 commit. Prompt base siempre:
+`Ejecuta SOLO T-XX. Guardia: confirma modelo, si no coincides detente y pide cambio. Al terminar diff + criterio + espera.`
+
+## Spark free (bulk visual/simple)
+- T-01: repo + GitHub privado chatbot-odontologa-mvp. Adj: tasks T-01 + plan §7 + AGENTS git
+- T-03: seed admin + 5 servicios. Adj: tasks T-03 + plan §1
+- T-04: singleton Prisma. Adj: tasks T-04 + plan §1
+- T-06: calcularVentana. Adj: tasks T-06 + plan §5
+- T-13: mensajes + keywords. Adj: tasks T-13 + plan §4 + spec §4
+- T-36: /privacidad. Adj: tasks T-36 + plan §6
+- T-37: /login toggle. Adj: tasks T-37 + plan §6
+- T-38: /reset token. Adj: tasks T-38 + plan §6
+- T-39: layout panel. Adj: tasks T-39 + plan §6
+- T-40: lista semáforo 60s. Adj: tasks T-40 + plan §5
+- T-41: detalle + consultas. Adj: tasks T-41 + plan §2,5
+- T-43: contenido servicios. Adj: tasks T-43 + plan §2
+- T-44: consultorio + QR. Adj: tasks T-44 + plan §2
+- T-45: package prod. Adj: tasks T-45 + plan §7
+- T-48: E2E doc 8 puntos. Adj: tasks T-48 + spec §7
+- T-49: guía doctora. Adj: tasks T-49
+
+## Qwen3.7 Plus (backend medio)
+- T-05: ratelimit. Adj: tasks T-05 + plan §6
+- T-07: helper Meta. Adj: tasks T-07 + plan §3
+- T-08: helper SMTP. Adj: tasks T-08 + plan §6
+- T-10: middleware. Adj: tasks T-10 + plan §6
+- T-22: GET pacientes. Adj: tasks T-22 + plan §2
+- T-23: GET detalle. Adj: tasks T-23 + plan §2
+- T-26: consultas API. Adj: tasks T-26 + plan §2
+- T-27: admin servicios. Adj: tasks T-27 + plan §2
+- T-28: admin consultorio. Adj: tasks T-28 + plan §2
+- T-29: admin doctores QR. Adj: tasks T-29 + plan §2
+- T-32: login. Adj: tasks T-32 + plan §6
+- T-33: logout. Adj: tasks T-33 + plan §6
+
+## Qwen3.7 Plus (medio-difícil barato + ex-Sonnet rebajadas)
+- T-09: sesión + bcrypt. Adj: tasks T-09 + plan §6
+- T-11: webhook GET verify. Adj: tasks T-11 + plan §3
+- T-14: dispatcher + bienvenida. Adj: tasks T-14 + plan §4
+- T-15: consentimiento. Adj: tasks T-15 + plan §4
+- T-17: nombre. Adj: tasks T-17 + plan §4
+- T-19: cierre. Adj: tasks T-19 + plan §4
+- T-21: processWebhook. Adj: tasks T-21 + plan §3-4
+- T-24: PATCH paciente. Adj: tasks T-24 + plan §2
+- T-25: DELETE ARCO. Adj: tasks T-25 + plan §2
+- T-30: mensajes libre. Adj: tasks T-30 + plan §5
+- T-31: mensajes plantilla. Adj: tasks T-31 + plan §5
+- T-34: forgot sha256. Adj: tasks T-34 + plan §6
+
+## Qwen3.7/3.8 Max — OBLIGATORIAS (7, RIESGO duro)
+- T-12: webhook POST HMAC. Adj: tasks T-12 + plan §3
+- T-16: rechazado ARCO. Adj: tasks T-16 + plan §4
+- T-18: motivo + SMTP. Adj: tasks T-18 + plan §4
+- T-20: recurrente. Adj: tasks T-20 + plan §4
+- T-35: reset 1h. Adj: tasks T-35 + plan §6
+- T-42: acciones ARCO. Adj: tasks T-42 + plan §2,5
+- T-47: webhook Meta + plantilla. Adj: tasks T-47 + plan §7
+
+## Spark free — ex-Sonnet simple
+- T-46: package prod + checklist deploy. Adj: tasks T-46 + plan §7
+
+## Hechas (no tocar)
+- T-02: schema Prisma (Sonnet 4.5, cerrada)
+
+## Alternativas si Max se agota (mismo rigor, menor costo)
+Orden de fallback para las 7 obligatorias:
+1. Sonnet 4.5 free (Antigravity, por cuota) — mejor auditor
+2. Kimi K3 (Go/ClinePass) — secuencias largas agénticas, E2E T-47
+3. DeepSeek V4 Pro (Go/ClinePass) — solo si aceptas su opt-in China; evita en auth/datos
+4. Muse Spark (Go, 45k req) — riesgo medio con alto límite
+
+Regla fallback: pide `audita en modo crítico y marca [RIESGO]/[ACLARAR]` y no despliegues a prod sin una revisión Max/Sonnet posterior en T-12, T-35, T-42, T-47.

@@ -17,3 +17,8 @@ yarn-debug.log*
 yarn-error.log*
 .DS_Store
 *.pem
+
+# Docs locales sensibles, no van al remoto
+spec.md
+plan.md
+ruta*.md
