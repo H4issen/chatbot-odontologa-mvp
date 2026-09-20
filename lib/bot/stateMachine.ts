@@ -8,7 +8,9 @@ import {
   MENSAJE_CONSENTIMIENTO,
   MENSAJE_REFERIDO_CODIGO,
   MENSAJE_SOLICITUD_NOMBRE,
+  MENSAJE_SOLICITUD_MOTIVO,
   MENSAJE_RECHAZADO,
+  buildMessage,
 } from "./messages";
 
 type BotState =
@@ -49,6 +51,8 @@ export async function handleMessage(waId: string, rawText: string): Promise<stri
       return handleConsentimiento(paciente, text);
     case "RECHAZADO":
       return handleRechazado(paciente, text);
+    case "NOMBRE":
+      return handleNombre(paciente, text);
     default:
       return handleBienvenida(paciente, text);
   }
@@ -88,6 +92,14 @@ function normalizarTexto(text: string): string {
     .toLowerCase()
     .normalize("NFD")
     .replace(/[̀-ͯ]/g, "");
+}
+
+function sanitizarTexto(text: string): string {
+  // Eliminar tags HTML y su contenido (especialmente scripts)
+  let limpio = text.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, "");
+  // Eliminar tags HTML restantes
+  limpio = limpio.replace(/<[^>]*>/g, "");
+  return limpio;
 }
 
 async function handleConsentimiento(paciente: Paciente, text: string): Promise<string> {
@@ -145,4 +157,22 @@ async function handleRechazado(paciente: Paciente, text: string): Promise<string
   }
 
   return MENSAJE_RECHAZADO;
+}
+
+async function handleNombre(paciente: Paciente, text: string): Promise<string> {
+  const sanitizado = sanitizarTexto(text);
+  
+  if (!sanitizado) {
+    return MENSAJE_SOLICITUD_NOMBRE;
+  }
+
+  await prisma.paciente.update({
+    where: { phone_number: paciente.phone_number },
+    data: {
+      nombre: sanitizado,
+      bot_state: "MOTIVO",
+    },
+  });
+
+  return buildMessage(MENSAJE_SOLICITUD_MOTIVO, { Nombre: sanitizado });
 }
