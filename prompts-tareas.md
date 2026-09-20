@@ -32,6 +32,7 @@ Regla: adjunta SOLO lo indicado por T. 1 tarea=1 commit. Prompt base siempre:
 - T-27: admin servicios. Adj: tasks T-27 + plan §2
 - T-28: admin consultorio. Adj: tasks T-28 + plan §2
 - T-29: admin doctores QR. Adj: tasks T-29 + plan §2
+- T-29b: parseo QR en bot. Adj: tasks T-29b + plan §2
 - T-32: login. Adj: tasks T-32 + plan §6
 - T-33: logout. Adj: tasks T-33 + plan §6
 
@@ -63,6 +64,16 @@ Regla: adjunta SOLO lo indicado por T. 1 tarea=1 commit. Prompt base siempre:
 
 ## Hechas (no tocar)
 - T-02: schema Prisma (Sonnet 4.5, cerrada)
+
+## T-50 post-MVP — doctores que escriben al bot (NO ejecutar en MVP)
+Hueco: el bot solo atiende pacientes; un doctor referidor caería en flujo
+de paciente. Decisión: fallback mínimo, la doctora reparte los QR en persona.
+- Keywords: "soy doctor", "refiero", "mi código", "mi qr" → mensaje:
+  "Con gusto. La Dra. le envía su código directamente por este medio."
+  Fin del flujo, sin crear Paciente ni Consulta ni solicitud.
+- NO opción 4 en menú (fricción al 95% de pacientes), NO derivar "empresa"
+  como doctor (desajuste semántico + contamina segmento), NO auto-QR.
+- Adj cuando toque: tasks T-50 (crear al planificar v2) + plan §4.
 
 ## Alternativas si Max se agota (mismo rigor, menor costo)
 Orden de fallback para las 7 obligatorias:
