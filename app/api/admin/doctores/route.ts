@@ -57,8 +57,13 @@ export async function POST(request: Request) {
 
     const { nombre } = validation.data;
 
-    // Generar codigo_qr único: DR_NOMBRE_TIMESTAMP
-    const nombreNormalizado = nombre.toUpperCase().replace(/\s+/g, '_');
+    // Generar codigo_qr único URL-safe: DR_NOMBRE_TIMESTAMP
+    // Normalización: mayúsculas + remover acentos + espacios a guiones bajos
+    const nombreNormalizado = nombre
+      .toUpperCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '') // Remover acentos/diacríticos
+      .replace(/\s+/g, '_');
     const timestamp = Date.now().toString(36).toUpperCase();
     let codigo_qr = `DR_${nombreNormalizado}_${timestamp}`;
 
