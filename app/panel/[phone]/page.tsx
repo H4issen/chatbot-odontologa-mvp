@@ -159,7 +159,7 @@ export default function DetallePacientePage() {
 
   if (noEncontrado) {
     return (
-      <main>
+      <main className="container">
         <p>Paciente no encontrado</p>
         <a href="/panel">Volver a la lista</a>
       </main>
@@ -168,7 +168,7 @@ export default function DetallePacientePage() {
 
   if (!detalle) {
     return (
-      <main>
+      <main className="container">
         <p>Cargando paciente...</p>
       </main>
     );
@@ -179,7 +179,7 @@ export default function DetallePacientePage() {
   );
 
   return (
-    <main>
+    <main className="container">
       <a href="/panel">Volver a la lista</a>
 
       <section>
@@ -214,19 +214,20 @@ export default function DetallePacientePage() {
 
       <section>
         <h2>Acciones</h2>
-        {mensaje && <p>{mensaje}</p>}
+        {mensaje && <p className="alert alert-info">{mensaje}</p>}
         <div>
           <h3>Responder</h3>
           <textarea
+            className="form-control"
             value={textoLibre}
             onChange={(e) => setTextoLibre(e.target.value)}
             placeholder="Escribe tu mensaje..."
             disabled={detalle.ventana.expirada}
           />
-          <button onClick={enviarLibre} disabled={detalle.ventana.expirada}>
+          <button className="btn btn-primary" onClick={enviarLibre} disabled={detalle.ventana.expirada}>
             Enviar mensaje libre
           </button>
-          <button onClick={enviarPlantilla}>
+          <button className="btn btn-secondary" onClick={enviarPlantilla}>
             Enviar plantilla
           </button>
           {detalle.ventana.expirada && (
@@ -235,24 +236,34 @@ export default function DetallePacientePage() {
         </div>
         <div>
           <h3>Gestionar paciente</h3>
-          <button onClick={archivar} disabled={detalle.estado === "archivado"}>
+          <button className="btn btn-danger" onClick={archivar} disabled={detalle.estado === "archivado"}>
             {detalle.estado === "archivado" ? "Archivado" : "Archivar"}
           </button>
-          <button onClick={() => setMostrarModalARCO(true)}>
+          <button className="btn btn-danger" onClick={() => setMostrarModalARCO(true)}>
             Eliminar paciente (ARCO)
           </button>
         </div>
       </section>
 
       {mostrarModalARCO && (
-        <div>
-          <h3>Confirmar eliminación ARCO</h3>
-          <p>
-            Esta acción eliminará todos los datos del paciente (nombre, motivo,
-            consultas) y dejará solo el teléfono como registro de bloqueo.
-          </p>
-          <button onClick={eliminarARCO}>Confirmar eliminación</button>
-          <button onClick={() => setMostrarModalARCO(false)}>Cancelar</button>
+        <div className="modal" style={{ display: "block" }}>
+          <div className="modal-dialog">
+            <div className="modal-content">
+              <div className="modal-header">
+                <h3 className="modal-title">Confirmar eliminación ARCO</h3>
+              </div>
+              <div className="modal-body">
+                <p>
+                  Esta acción eliminará todos los datos del paciente (nombre, motivo,
+                  consultas) y dejará solo el teléfono como registro de bloqueo.
+                </p>
+              </div>
+              <div className="modal-footer">
+                <button className="btn btn-secondary" onClick={() => setMostrarModalARCO(false)}>Cancelar</button>
+                <button className="btn btn-danger" onClick={eliminarARCO}>Confirmar eliminación</button>
+              </div>
+            </div>
+          </div>
         </div>
       )}
 
@@ -271,13 +282,14 @@ export default function DetallePacientePage() {
                 ) : (
                   <div>
                     <textarea
+                      className="form-control"
                       value={diagnosticos[c.id] || ""}
                       onChange={(e) =>
                         setDiagnosticos((prev) => ({ ...prev, [c.id]: e.target.value }))
                       }
                       placeholder="Escribe el diagnóstico..."
                     />
-                    <button onClick={() => guardarDiagnostico(c.id)}>
+                    <button className="btn btn-primary" onClick={() => guardarDiagnostico(c.id)}>
                       Guardar diagnóstico
                     </button>
                   </div>

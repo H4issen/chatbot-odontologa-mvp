@@ -17,8 +17,10 @@ Regla: adjunta SOLO lo indicado por T. 1 tarea=1 commit. Prompt base siempre:
 - T-41: detalle + consultas. Adj: tasks T-41 + plan §2,5
 - T-43: contenido servicios. Adj: tasks T-43 + plan §2
 - T-44: consultorio + QR. Adj: tasks T-44 + plan §2
+- T-44b: pase Bootstrap solo-CSS en todas las rutas (solo tras T-44). Adj: tasks T-44b
 - T-45: package prod. Adj: tasks T-45 + plan §7
-- T-48: E2E doc 8 puntos. Adj: tasks T-48 + spec §7
+- T-46: package prod + checklist deploy. Adj: tasks T-46 + plan §7
+- T-48: E2E doc 9 puntos. Adj: tasks T-48 + spec §7
 - T-49: guía doctora. Adj: tasks T-49
 
 ## Qwen3.7 Plus (backend medio)
@@ -58,9 +60,6 @@ Regla: adjunta SOLO lo indicado por T. 1 tarea=1 commit. Prompt base siempre:
 - T-35: reset 1h. Adj: tasks T-35 + plan §6
 - T-42: acciones ARCO. Adj: tasks T-42 + plan §2,5
 - T-47: webhook Meta + plantilla. Adj: tasks T-47 + plan §7
-
-## Spark free — ex-Sonnet simple
-- T-46: package prod + checklist deploy. Adj: tasks T-46 + plan §7
 
 ## Hechas (no tocar)
 - T-02: schema Prisma (Sonnet 4.5, cerrada)

@@ -6,6 +6,9 @@ import { prisma } from "../../../lib/prisma";
 import { calcularVentana } from "../../../lib/ventana";
 import { getSession } from "../../../lib/auth";
 
+// La sesión se verifica por request: nunca prerenderizar en build.
+export const dynamic = "force-dynamic";
+
 export async function GET(request: Request) {
   // Verificar sesión
   const session = await getSession(request);

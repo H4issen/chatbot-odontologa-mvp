@@ -31,15 +31,15 @@ const ORDEN_SEMAFORO: Record<Semaforo, number> = {
 const CLASE_FILA: Record<Semaforo, string> = {
   verde: "",
   amarillo: "",
-  rojo: "bg-red-50",
-  expirado: "bg-gray-100",
+  rojo: "table-danger",
+  expirado: "table-secondary",
 };
 
 const CLASE_PUNTO: Record<Semaforo, string> = {
-  verde: "bg-green-500",
-  amarillo: "bg-yellow-400 animate-pulse",
-  rojo: "bg-red-500 animate-pulse",
-  expirado: "bg-gray-400",
+  verde: "badge rounded-pill bg-success",
+  amarillo: "badge rounded-pill bg-warning animate-pulse",
+  rojo: "badge rounded-pill bg-danger animate-pulse",
+  expirado: "badge rounded-pill bg-secondary",
 };
 
 function formatoRestante(horas: number): string {
@@ -77,17 +77,7 @@ export default function PanelPage() {
 
   if (pacientes === null) {
     return (
-      <main>
-        <style>{`
-          .bg-green-500{background-color:#22c55e}
-          .bg-yellow-400{background-color:#facc15}
-          .bg-red-500{background-color:#ef4444}
-          .bg-red-50{background-color:#fef2f2}
-          .bg-gray-100{background-color:#f3f4f6}
-          .bg-gray-400{background-color:#9ca3af}
-          .animate-pulse{animation:pulse 2s infinite}
-          @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
-        `}</style>
+      <main className="container">
         <p>Cargando pacientes...</p>
       </main>
     );
@@ -95,7 +85,7 @@ export default function PanelPage() {
 
   if (pacientes.length === 0) {
     return (
-      <main>
+      <main className="container">
         <p>Sin pacientes registrados aún</p>
       </main>
     );
@@ -108,19 +98,9 @@ export default function PanelPage() {
   );
 
   return (
-    <main>
-      <style>{`
-        .bg-green-500{background-color:#22c55e}
-        .bg-yellow-400{background-color:#facc15}
-        .bg-red-500{background-color:#ef4444}
-        .bg-red-50{background-color:#fef2f2}
-        .bg-gray-100{background-color:#f3f4f6}
-        .bg-gray-400{background-color:#9ca3af}
-        .animate-pulse{animation:pulse 2s infinite}
-        @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
-      `}</style>
+    <main className="container">
       <h1>Pacientes</h1>
-      <table>
+      <table className="table table-striped">
         <thead>
           <tr>
             <th>Estado</th>
@@ -139,7 +119,7 @@ export default function PanelPage() {
               onClick={() => router.push(`/panel/${encodeURIComponent(p.phone_number)}`)}
             >
               <td>
-                <span className={CLASE_PUNTO[p.ventana.semaforo]} />
+                <span className={CLASE_PUNTO[p.ventana.semaforo]}>&nbsp;</span>
               </td>
               <td>{p.nombre ?? "—"}</td>
               <td>{p.phone_number}</td>

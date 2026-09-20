@@ -60,6 +60,7 @@ function ResetForm({ token }: { token: string | null }) {
       <label>
         Nueva contraseña (mínimo 8 caracteres)
         <input
+          className="form-control"
           type="password"
           name="password"
           required
@@ -72,6 +73,7 @@ function ResetForm({ token }: { token: string | null }) {
       <label>
         Confirmar contraseña
         <input
+          className="form-control"
           type="password"
           name="password_confirm"
           required
@@ -81,8 +83,8 @@ function ResetForm({ token }: { token: string | null }) {
           autoComplete="new-password"
         />
       </label>
-      {error && <p role="alert">{error}</p>}
-      <button type="submit" disabled={cargando}>
+      {error && <p className="alert alert-danger" role="alert">{error}</p>}
+      <button className="btn btn-primary" type="submit" disabled={cargando}>
         {cargando ? "Guardando..." : "Guardar contraseña"}
       </button>
     </form>
@@ -91,7 +93,7 @@ function ResetForm({ token }: { token: string | null }) {
 
 export default function ResetPage() {
   return (
-    <main>
+    <main className="container">
       <h1>Restablecer contraseña</h1>
       <Suspense fallback={<p>Cargando...</p>}>
         <ResetFormWithToken />

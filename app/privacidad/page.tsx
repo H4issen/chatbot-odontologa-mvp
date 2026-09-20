@@ -6,7 +6,7 @@ export default function PrivacidadPage() {
   const contactEmail = process.env.DOCTOR_EMAIL || "el correo del consultorio";
 
   return (
-    <main>
+    <main className="container">
       <h1>Aviso de Privacidad</h1>
 
       <p>

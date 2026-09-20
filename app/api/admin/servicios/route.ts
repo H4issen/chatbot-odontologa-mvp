@@ -5,6 +5,9 @@ import { NextResponse } from "next/server";
 import { prisma } from "../../../../lib/prisma";
 import { getSession } from "../../../../lib/auth";
 
+// La sesión se verifica por request: nunca prerenderizar en build.
+export const dynamic = "force-dynamic";
+
 // GET /api/admin/servicios
 export async function GET(request: Request) {
   // Verificar sesión

@@ -234,14 +234,14 @@ export default function ContenidoPage() {
 
   if (!servicios) {
     return (
-      <main>
+      <main className="container">
         <p>Cargando contenido...</p>
       </main>
     );
   }
 
   return (
-    <main>
+    <main className="container">
       <h1>Contenido</h1>
 
       <section>
@@ -255,6 +255,7 @@ export default function ContenidoPage() {
               <label>
                 Descripción corta (máximo 300 caracteres)
                 <textarea
+                  className="form-control"
                   value={form.descripcion}
                   maxLength={400}
                   onChange={(e) =>
@@ -271,6 +272,7 @@ export default function ContenidoPage() {
               <label>
                 Precio desde (opcional)
                 <input
+                  className="form-control"
                   type="text"
                   value={form.precio}
                   onChange={(e) =>
@@ -281,8 +283,8 @@ export default function ContenidoPage() {
                   }
                 />
               </label>
-              <button onClick={() => guardar(s.slug)}>Guardar</button>
-              {avisos[s.slug] && <p>{avisos[s.slug]}</p>}
+              <button className="btn btn-primary" onClick={() => guardar(s.slug)}>Guardar</button>
+              {avisos[s.slug] && <p className="alert alert-info">{avisos[s.slug]}</p>}
             </article>
           );
         })}
@@ -297,6 +299,7 @@ export default function ContenidoPage() {
             <label>
               Dirección
               <input
+                className="form-control"
                 type="text"
                 value={formConsultorio.direccion_texto}
                 onChange={(e) =>
@@ -307,6 +310,7 @@ export default function ContenidoPage() {
             <label>
               URL de Maps
               <input
+                className="form-control"
                 type="url"
                 value={formConsultorio.maps_url}
                 onChange={(e) =>
@@ -317,6 +321,7 @@ export default function ContenidoPage() {
             <label>
               Horarios
               <input
+                className="form-control"
                 type="text"
                 value={formConsultorio.horarios_texto}
                 onChange={(e) =>
@@ -324,8 +329,8 @@ export default function ContenidoPage() {
                 }
               />
             </label>
-            <button onClick={guardarConsultorio}>Guardar</button>
-            {avisoConsultorio && <p>{avisoConsultorio}</p>}
+            <button className="btn btn-primary" onClick={guardarConsultorio}>Guardar</button>
+            {avisoConsultorio && <p className="alert alert-info">{avisoConsultorio}</p>}
           </div>
         )}
       </section>
@@ -337,39 +342,54 @@ export default function ContenidoPage() {
         ) : doctores.length === 0 ? (
           <p>Sin doctores registrados aún</p>
         ) : (
-          <ul>
-            {doctores.map((d) => (
-              <li key={d.id}>
-                <p>{d.nombre}</p>
-                <p>Código: {d.codigo_qr}</p>
-                <label>
-                  Link para compartir
-                  <input
-                    type="text"
-                    readOnly
-                    value={`https://wa.me/?text=${encodeURIComponent(`REF_${d.codigo_qr}`)}`}
-                  />
-                </label>
-                <button onClick={() => copiarLink(d.id, d.codigo_qr)}>
-                  {copiado === d.id ? "Copiado" : "Copiar link"}
-                </button>
-                <button onClick={() => eliminarDoctor(d.id, d.nombre)}>Eliminar</button>
-              </li>
-            ))}
-          </ul>
+          <table className="table table-striped">
+            <thead>
+              <tr>
+                <th>Nombre</th>
+                <th>Código</th>
+                <th>Link</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              {doctores.map((d) => (
+                <tr key={d.id}>
+                  <td>{d.nombre}</td>
+                  <td>
+                    <span className="badge bg-secondary">{d.codigo_qr}</span>
+                  </td>
+                  <td>
+                    <input
+                      className="form-control"
+                      type="text"
+                      readOnly
+                      value={`https://wa.me/?text=${encodeURIComponent(`REF_${d.codigo_qr}`)}`}
+                    />
+                    <button className="btn btn-secondary" onClick={() => copiarLink(d.id, d.codigo_qr)}>
+                      {copiado === d.id ? "Copiado" : "Copiar link"}
+                    </button>
+                  </td>
+                  <td>
+                    <button className="btn btn-danger" onClick={() => eliminarDoctor(d.id, d.nombre)}>Eliminar</button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         )}
         <div>
           <h3>Nuevo doctor</h3>
           <label>
             Nombre
             <input
+              className="form-control"
               type="text"
               value={nuevoDoctor}
               onChange={(e) => setNuevoDoctor(e.target.value)}
             />
           </label>
-          <button onClick={crearDoctor}>Nuevo doctor</button>
-          {avisoDoctores && <p>{avisoDoctores}</p>}
+          <button className="btn btn-primary" onClick={crearDoctor}>Nuevo doctor</button>
+          {avisoDoctores && <p className="alert alert-info">{avisoDoctores}</p>}
         </div>
       </section>
     </main>

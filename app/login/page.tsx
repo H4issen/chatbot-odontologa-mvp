@@ -43,7 +43,7 @@ export default function LoginPage() {
   }
 
   return (
-    <main>
+    <main className="container">
       <h1>Iniciar sesión</h1>
       <noscript>
         <p>Esta página necesita JavaScript para el inicio de sesión.</p>
@@ -52,6 +52,7 @@ export default function LoginPage() {
         <label>
           Correo electrónico
           <input
+            className="form-control"
             type="email"
             name="email"
             required
@@ -63,6 +64,7 @@ export default function LoginPage() {
         <label>
           Contraseña
           <input
+            className="form-control"
             type={mostrarPassword ? "text" : "password"}
             name="password"
             required
@@ -72,14 +74,15 @@ export default function LoginPage() {
           />
         </label>
         <button
+          className="btn btn-secondary"
           type="button"
           onClick={() => setMostrarPassword((v) => !v)}
           aria-label={mostrarPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
         >
           {mostrarPassword ? "Ocultar" : "Mostrar"}
         </button>
-        {error && <p role="alert">{error}</p>}
-        <button type="submit" disabled={cargando}>
+        {error && <p className="alert alert-danger" role="alert">{error}</p>}
+        <button className="btn btn-primary" type="submit" disabled={cargando}>
           {cargando ? "Entrando..." : "Entrar"}
         </button>
       </form>

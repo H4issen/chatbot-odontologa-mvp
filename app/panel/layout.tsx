@@ -16,7 +16,7 @@ export default async function PanelLayout({ children }: { children: React.ReactN
   }
 
   return (
-    <div>
+    <div className="container">
       <header>
         <span>Chatbot Paola — Panel</span>
         <nav>
@@ -25,7 +25,7 @@ export default async function PanelLayout({ children }: { children: React.ReactN
           <a href="/panel/contenido">Contenido</a>
         </nav>
         <form action="/api/auth/logout" method="POST">
-          <button type="submit">Cerrar sesión</button>
+          <button className="btn btn-secondary" type="submit">Cerrar sesión</button>
         </form>
       </header>
       <main>{children}</main>
