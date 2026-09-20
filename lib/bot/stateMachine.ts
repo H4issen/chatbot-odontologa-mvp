@@ -3,6 +3,7 @@
 // Máquina de estados: spec §4.
 
 import { prisma } from "../prisma";
+import { sendNewPatientAlert } from "../mail";
 import {
   MENSAJE_BIENVENIDA,
   MENSAJE_CONSENTIMIENTO,
@@ -10,6 +11,7 @@ import {
   MENSAJE_SOLICITUD_NOMBRE,
   MENSAJE_SOLICITUD_MOTIVO,
   MENSAJE_RECHAZADO,
+  MENSAJE_CIERRE_HORARIO,
   buildMessage,
 } from "./messages";
 
@@ -53,6 +55,8 @@ export async function handleMessage(waId: string, rawText: string): Promise<stri
       return handleRechazado(paciente, text);
     case "NOMBRE":
       return handleNombre(paciente, text);
+    case "MOTIVO":
+      return handleMotivo(paciente, text);
     default:
       return handleBienvenida(paciente, text);
   }
@@ -175,4 +179,34 @@ async function handleNombre(paciente: Paciente, text: string): Promise<string> {
   });
 
   return buildMessage(MENSAJE_SOLICITUD_MOTIVO, { Nombre: sanitizado });
+}
+
+async function handleMotivo(paciente: Paciente, text: string): Promise<string> {
+  const sanitizado = sanitizarTexto(text);
+  
+  if (!sanitizado) {
+    return MENSAJE_SOLICITUD_MOTIVO;
+  }
+
+  await prisma.consulta.create({
+    data: {
+      paciente_phone: paciente.phone_number,
+      motivo_reportado: sanitizado,
+    },
+  });
+
+  await prisma.paciente.update({
+    where: { phone_number: paciente.phone_number },
+    data: {
+      bot_state: "CIERRE",
+      estado: "registrado",
+    },
+  });
+
+  // Fire-and-forget: enviar alerta SMTP sin bloquear el flujo
+  sendNewPatientAlert(paciente.nombre ?? "Paciente", sanitizado).catch((err) => {
+    console.error("Error enviando alerta SMTP:", err);
+  });
+
+  return MENSAJE_CIERRE_HORARIO;
 }
