@@ -250,12 +250,7 @@ async function handleCierre(paciente: Paciente, text: string): Promise<string> {
     if (matchedSlug) {
       const servicio = await prisma.servicio.findUnique({ where: { slug: matchedSlug } });
       if (servicio) {
-        // Sanitize: remove "diagnóstico" from description if present (data quality issue from seed)
-        const descripcionLimpia = servicio.descripcion_corta
-          .replace(/diagnóstico/gi, "")
-          .replace(/\s+/g, " ")
-          .trim();
-        return `${descripcionLimpia} ${DISCLAIMER_SERVICIO}`;
+        return `${servicio.descripcion_corta} ${DISCLAIMER_SERVICIO}`;
       }
     }
 

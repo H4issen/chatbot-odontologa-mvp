@@ -12,31 +12,31 @@ const SERVICIOS = [
     slug: "corona",
     nombre: "Corona dental",
     descripcion_corta:
-      "Corona dental: restaura la forma y función del diente. Sin compromiso, el costo final y diagnóstico solo los define la Dra. en consulta.",
+      "Corona dental: restaura la forma y función del diente. Sin compromiso, el costo final solo lo define la Dra. en consulta.",
   },
   {
     slug: "limpieza",
     nombre: "Limpieza dental",
     descripcion_corta:
-      "Limpieza dental profesional. Sin compromiso, el costo final y diagnóstico solo los define la Dra. en consulta.",
+      "Limpieza dental profesional. Sin compromiso, el costo final solo lo define la Dra. en consulta.",
   },
   {
     slug: "blanqueamiento",
     nombre: "Blanqueamiento dental",
     descripcion_corta:
-      "Blanqueamiento dental estético. Sin compromiso, el costo final y diagnóstico solo los define la Dra. en consulta.",
+      "Blanqueamiento dental estético. Sin compromiso, el costo final solo lo define la Dra. en consulta.",
   },
   {
     slug: "brackets",
     nombre: "Brackets / Ortodoncia",
     descripcion_corta:
-      "Tratamiento de ortodoncia con brackets. Sin compromiso, el costo final y diagnóstico solo los define la Dra. en consulta.",
+      "Tratamiento de ortodoncia con brackets. Sin compromiso, el costo final solo lo define la Dra. en consulta.",
   },
   {
     slug: "implante",
     nombre: "Implante dental",
     descripcion_corta:
-      "Implante dental para reemplazar piezas perdidas. Sin compromiso, el costo final y diagnóstico solo los define la Dra. en consulta.",
+      "Implante dental para reemplazar piezas perdidas. Sin compromiso, el costo final solo lo define la Dra. en consulta.",
   },
 ] as const;
 
