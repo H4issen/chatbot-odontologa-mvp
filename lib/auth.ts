@@ -2,8 +2,10 @@
 // Helper de sesión con iron-session y helpers bcrypt.
 
 import { getIronSession, SessionOptions } from "iron-session";
-import * as bcrypt from "bcrypt";
 import { sessionConfig } from "./session.config";
+
+// bcrypt nativo no carga en Edge Runtime (middleware): importación lazy.
+// Solo las rutas API (Node runtime) llaman hash/verify, nunca el middleware.
 
 export interface SessionData {
   userId: number;
@@ -37,9 +39,11 @@ export function clearSessionResponse(baseResponse: Response): Response {
 }
 
 export async function hashPassword(plain: string): Promise<string> {
+  const bcrypt = await import("bcrypt");
   return bcrypt.hash(plain, 12);
 }
 
 export async function verifyPassword(plain: string, hash: string): Promise<boolean> {
+  const bcrypt = await import("bcrypt");
   return bcrypt.compare(plain, hash);
 }
