@@ -47,6 +47,8 @@ export async function handleMessage(waId: string, rawText: string): Promise<stri
       return handleBienvenida(paciente, text);
     case "CONSENTIMIENTO":
       return handleConsentimiento(paciente, text);
+    case "RECHAZADO":
+      return handleRechazado(paciente, text);
     default:
       return handleBienvenida(paciente, text);
   }
@@ -117,4 +119,30 @@ async function handleConsentimiento(paciente: Paciente, text: string): Promise<s
   }
 
   return MENSAJE_CONSENTIMIENTO;
+}
+
+async function handleRechazado(paciente: Paciente, text: string): Promise<string> {
+  const normalizado = normalizarTexto(text);
+
+  if (normalizado === "aceptar" || normalizado === "acepto" || normalizado === "si") {
+    if (paciente.nombre !== null) {
+      await prisma.paciente.update({
+        where: { phone_number: paciente.phone_number },
+        data: { bot_state: "BIENVENIDA" },
+      });
+      return MENSAJE_BIENVENIDA;
+    }
+
+    await prisma.paciente.update({
+      where: { phone_number: paciente.phone_number },
+      data: {
+        consentimiento: "aceptado",
+        consentimiento_at: new Date(),
+        bot_state: "NOMBRE",
+      },
+    });
+    return MENSAJE_SOLICITUD_NOMBRE;
+  }
+
+  return MENSAJE_RECHAZADO;
 }
