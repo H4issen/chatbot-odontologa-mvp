@@ -1,6 +1,7 @@
-// app/api/pacientes/[phone]/route.ts — T-23 + T-24
+// app/api/pacientes/[phone]/route.ts — T-23 + T-24 + T-25
 // GET /api/pacientes/[phone] — detalle completo de un paciente con consultas y ventana
 // PATCH /api/pacientes/[phone] — actualizar estado o nombre del paciente
+// DELETE /api/pacientes/[phone] — borrado ARCO total (sin fila de bloqueo)
 
 import { NextResponse } from "next/server";
 import { z } from "zod";
@@ -130,4 +131,40 @@ export async function PATCH(
   });
 
   return NextResponse.json(pacienteActualizado);
+}
+
+// DELETE /api/pacientes/[phone] — borrado ARCO total (T-25)
+export async function DELETE(
+  request: Request,
+  { params }: { params: { phone: string } }
+) {
+  // Verificar sesión
+  const session = await getSession(request);
+  if (!session) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  // Decodificar phone (URI-encoded)
+  const phone = decodeURIComponent(params.phone);
+
+  // Verificar que el paciente existe
+  const pacienteExistente = await prisma.paciente.findUnique({
+    where: { phone_number: phone },
+  });
+
+  if (!pacienteExistente) {
+    return NextResponse.json({ error: "Paciente no encontrado" }, { status: 404 });
+  }
+
+  // Borra todas las Consultas del paciente (cascada manual)
+  await prisma.consulta.deleteMany({
+    where: { paciente_phone: phone },
+  });
+
+  // Borra la fila Paciente completa (cero PII retenida; sin registro de bloqueo)
+  await prisma.paciente.delete({
+    where: { phone_number: phone },
+  });
+
+  return NextResponse.json({ success: true, message: "Paciente y consultas eliminados" });
 }
