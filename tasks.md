@@ -213,7 +213,9 @@
 - `verifyPassword("test", hash)` → `true`
 - `verifyPassword("wrong", hash)` → `false`
 - Cookie generada por iron-session tiene flags `HttpOnly; Secure; SameSite=Lax; Max-Age=43200`
-- Sin `SESSION_SECRET` → error al importar (fail fast)
+- Sin `SESSION_SECRET` → error lazy al crear/leer sesión, nada al importar (fixup: el fail-fast al importar tumbaba el middleware en Edge)
+
+**Observación auditoría (fixup T-09 aplicado):** `createSessionResponse` OBLIGATORIAMENTE sella con iron-session (`sealData`, misma password/opciones) — la versión inicial escribía JSON plano y ningún login real validaba (T-32/T-33/T-39 verdes por separado, flujo roto). Verificado: login → cookie sellada → `/panel` sin redirect. Además `bcrypt` nativo se importa lazy (`await import`) porque el estático crashea el middleware en Edge.
 
 **Commit:** `backend(auth): helper sesión iron-session y bcrypt cost 12`
 
@@ -935,7 +937,7 @@
 **Objetivo:** Layout del panel — verifica sesión server-side y ofrece logout.
 
 **Archivos a tocar:**
-- `app/(panel)/layout.tsx` (Server Component)
+- `app/panel/layout.tsx` (Server Component)
   - `getSession(req)` en server → si null → `redirect("/login")`
   - Header: nombre de la app + nav `Pacientes | Contenido` + botón `"Cerrar sesión"`
   - Botón logout → `<form action="/api/auth/logout" method="POST">` (funciona sin JS)
@@ -956,7 +958,7 @@
 **Objetivo:** Página `/panel` — lista de pacientes con semáforo 24h y polling cada 60s.
 
 **Archivos a tocar:**
-- `app/(panel)/page.tsx`
+- `app/panel/page.tsx`
   - `useEffect` con `setInterval(fetch, 60_000)` → `GET /api/pacientes` + cleanup en unmount
   - Tabla: nombre, teléfono, estado, semáforo (punto coloreado), tiempo restante (`Xh Ym`), última consulta (motivo truncado)
   - Clases CSS por semáforo:
@@ -985,7 +987,7 @@
 **Objetivo:** Página `/panel/[phone]` — datos del paciente, ventana y lista de consultas.
 
 **Archivos a tocar:**
-- `app/(panel)/[phone]/page.tsx` (parte 1: visualización)
+- `app/panel/[phone]/page.tsx` (parte 1: visualización)
   - Fetch `GET /api/pacientes/<phone>` al montar
   - Sección info: nombre, teléfono, tipo contacto, doctor referidor (si tiene), consentimiento (fecha)
   - Sección ventana: `"Último mensaje: [fecha]. Cierra: [fecha] ([Xh Ym])."`
@@ -1007,7 +1009,7 @@
 **Objetivo:** Acciones del paciente — responder, plantilla, diagnóstico, archivar, ARCO.
 
 **Archivos a tocar:**
-- `app/(panel)/[phone]/page.tsx` (parte 2: acciones)
+- `app/panel/[phone]/page.tsx` (parte 2: acciones)
   - Botón `[Responder libre]` → textarea + submit `POST /api/mensajes/<phone>/libre`; **`disabled`** si `ventana.expirada`
   - Botón `[Enviar plantilla]` → submit `POST /api/mensajes/<phone>/plantilla`; **siempre activo** si `ventana.expirada`
   - Por cada consulta: textarea `diagnostico_doctora` + botón `[Guardar diagnóstico]` → `PATCH /api/consultas/<id>`; actualiza sin recargar página
@@ -1031,7 +1033,7 @@
 **Objetivo:** Página `/panel/contenido` — editar servicios (sección 1 de 2).
 
 **Archivos a tocar:**
-- `app/(panel)/contenido/page.tsx` (parcial: sección servicios)
+- `app/panel/contenido/page.tsx` (parcial: sección servicios)
   - Fetch `GET /api/admin/servicios` al montar
   - Por cada servicio: `nombre` (readonly), textarea `descripcion_corta` (max 300 chars, counter visible), input `precio_desde` (opcional), botón `[Guardar]` → `PATCH /api/admin/servicios/<slug>`
   - Validación client: `descripcion_corta > 300` → error antes de submit
@@ -1053,7 +1055,7 @@
 **Objetivo:** Página `/panel/contenido` — consultorio info y gestión de doctores QR (sección 2 de 2).
 
 **Archivos a tocar:**
-- `app/(panel)/contenido/page.tsx` (completar con secciones consultorio y doctores)
+- `app/panel/contenido/page.tsx` (completar con secciones consultorio y doctores)
   - Sección Consultorio: inputs `direccion_texto`, `maps_url`, `horarios_texto` + botón `[Guardar]` → `PATCH /api/admin/consultorio`
   - Sección Doctores Referidores:
     - Lista doctores con `nombre` + `codigo_qr` + link copyable `wa.me/521XXXXXXXXXX?text=REF_<codigo_qr>` [ACLARAR]
@@ -1070,6 +1072,27 @@
 - `maps_url` inválida (no URL) → error en UI antes de submit
 
 **Commit:** `frontend(panel): contenido consultorio info y doctores QR`
+
+---
+
+### T-44b `[frontend]`
+**Objetivo:** Pase único de estilo Bootstrap sobre TODAS las rutas (solo cuando T-36–T-44 existan; no adelantar — ver decisión registrada).
+
+**Archivos a tocar:**
+- `package.json` → `npm i bootstrap` (solo CSS; prohibido `react-bootstrap` y bundle JS)
+- Layout raíz → importar `bootstrap/dist/css/bootstrap.min.css`
+- `app/globals.css` (nuevo, mínimo) → solo keyframes pulse del semáforo (mapear a `bg-success/warning/danger/secondary`)
+- Todas las rutas (privacidad, login, reset, panel lista/detalle/contenido): clases `table, btn, badge, form-control, alert`; modal ARCO con markup Bootstrap + state React (sin JS de Bootstrap)
+- Prohibido tocar lógica de componentes; solo clases + CSS
+
+**Dependencias:** T-44 (todas las secciones concebidas)
+
+**Criterio testeable:**
+- `npm run dev` + revisión visual ruta por ruta: lista legible, semáforo con pulse, botones/estados claros, formularios y modal ARCO presentables
+- `npm run build` verde (el CSS no rompe el build)
+- Sin `react-bootstrap` en `package.json`, sin imports de JS de Bootstrap
+
+**Commit:** `frontend: pase Bootstrap solo-CSS en todas las rutas`
 
 ---
 
@@ -1166,7 +1189,7 @@
 6. Doctora responde libre desde panel → mensaje llega al WhatsApp de prueba
 7. Ventana expirada → `[Responder libre]` disabled, `[Enviar plantilla]` funciona
 8. `DELETE` ARCO → bot trata al `wa_id` como nuevo en siguiente contacto
-9. Middleware T-10 (re-prueba diferida): sin cookie, `GET /panel` → 302 a `/login` y `GET /api/pacientes` → 401 con `app/` ya existente
+9. Middleware T-10 (re-prueba diferida): sin cookie, `GET /panel` → redirect a `/login` (Next usa 307, no 302) y `GET /api/pacientes` → 401 con `app/` ya existente
 
 **Dependencias:** T-47, T-42, T-40
 
