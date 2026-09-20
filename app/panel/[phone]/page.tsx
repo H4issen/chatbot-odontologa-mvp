@@ -1,10 +1,10 @@
-// app/panel/[phone]/page.tsx — T-41 (parte 1: visualización)
-// Datos del paciente, ventana 24h y lista de consultas. Acciones en T-42.
+// app/panel/[phone]/page.tsx — T-41 + T-42
+// Datos del paciente, ventana 24h, lista de consultas y acciones (responder, plantilla, diagnóstico, archivar, ARCO).
 
 "use client";
 
 import { useEffect, useState } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 
 interface Consulta {
   id: number;
@@ -44,9 +44,14 @@ function formatoRestante(horas: number): string {
 
 export default function DetallePacientePage() {
   const params = useParams();
+  const router = useRouter();
   const phone = Array.isArray(params.phone) ? params.phone[0] : (params.phone as string);
   const [detalle, setDetalle] = useState<DetallePaciente | null>(null);
   const [noEncontrado, setNoEncontrado] = useState(false);
+  const [textoLibre, setTextoLibre] = useState("");
+  const [diagnosticos, setDiagnosticos] = useState<Record<number, string>>({});
+  const [mostrarModalARCO, setMostrarModalARCO] = useState(false);
+  const [mensaje, setMensaje] = useState<string | null>(null);
 
   useEffect(() => {
     let vivo = true;
@@ -72,6 +77,85 @@ export default function DetallePacientePage() {
       vivo = false;
     };
   }, [phone]);
+
+  async function enviarLibre() {
+    if (!textoLibre.trim()) return;
+    const res = await fetch(`/api/mensajes/${encodeURIComponent(phone)}/libre`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ texto: textoLibre }),
+    });
+    if (res.ok) {
+      setTextoLibre("");
+      setMensaje("Mensaje enviado");
+      setTimeout(() => setMensaje(null), 3000);
+    } else {
+      const err = await res.json();
+      setMensaje(err.error || "Error al enviar");
+    }
+  }
+
+  async function enviarPlantilla() {
+    const res = await fetch(`/api/mensajes/${encodeURIComponent(phone)}/plantilla`, {
+      method: "POST",
+    });
+    if (res.ok) {
+      setMensaje("Plantilla enviada");
+      setTimeout(() => setMensaje(null), 3000);
+    } else {
+      const err = await res.json();
+      setMensaje(err.error || "Error al enviar plantilla");
+    }
+  }
+
+  async function guardarDiagnostico(consultaId: number) {
+    const texto = diagnosticos[consultaId];
+    if (!texto?.trim()) return;
+    const res = await fetch(`/api/consultas/${consultaId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ diagnostico_doctora: texto }),
+    });
+    if (res.ok) {
+      setDetalle((prev) => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          consultas: prev.consultas.map((c) =>
+            c.id === consultaId ? { ...c, diagnostico_doctora: texto } : c
+          ),
+        };
+      });
+      setDiagnosticos((prev) => ({ ...prev, [consultaId]: "" }));
+      setMensaje("Diagnóstico guardado");
+      setTimeout(() => setMensaje(null), 3000);
+    }
+  }
+
+  async function archivar() {
+    const res = await fetch(`/api/pacientes/${encodeURIComponent(phone)}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ estado: "archivado" }),
+    });
+    if (res.ok) {
+      setDetalle((prev) => (prev ? { ...prev, estado: "archivado" } : prev));
+      setMensaje("Paciente archivado");
+      setTimeout(() => setMensaje(null), 3000);
+    }
+  }
+
+  async function eliminarARCO() {
+    const res = await fetch(`/api/pacientes/${encodeURIComponent(phone)}`, {
+      method: "DELETE",
+    });
+    if (res.ok) {
+      router.push("/panel");
+    } else {
+      setMensaje("Error al eliminar paciente");
+      setTimeout(() => setMensaje(null), 3000);
+    }
+  }
 
   if (noEncontrado) {
     return (
@@ -129,6 +213,50 @@ export default function DetallePacientePage() {
       </section>
 
       <section>
+        <h2>Acciones</h2>
+        {mensaje && <p>{mensaje}</p>}
+        <div>
+          <h3>Responder</h3>
+          <textarea
+            value={textoLibre}
+            onChange={(e) => setTextoLibre(e.target.value)}
+            placeholder="Escribe tu mensaje..."
+            disabled={detalle.ventana.expirada}
+          />
+          <button onClick={enviarLibre} disabled={detalle.ventana.expirada}>
+            Enviar mensaje libre
+          </button>
+          <button onClick={enviarPlantilla}>
+            Enviar plantilla
+          </button>
+          {detalle.ventana.expirada && (
+            <p>Mensaje libre deshabilitado (ventana expirada)</p>
+          )}
+        </div>
+        <div>
+          <h3>Gestionar paciente</h3>
+          <button onClick={archivar} disabled={detalle.estado === "archivado"}>
+            {detalle.estado === "archivado" ? "Archivado" : "Archivar"}
+          </button>
+          <button onClick={() => setMostrarModalARCO(true)}>
+            Eliminar paciente (ARCO)
+          </button>
+        </div>
+      </section>
+
+      {mostrarModalARCO && (
+        <div>
+          <h3>Confirmar eliminación ARCO</h3>
+          <p>
+            Esta acción eliminará todos los datos del paciente (nombre, motivo,
+            consultas) y dejará solo el teléfono como registro de bloqueo.
+          </p>
+          <button onClick={eliminarARCO}>Confirmar eliminación</button>
+          <button onClick={() => setMostrarModalARCO(false)}>Cancelar</button>
+        </div>
+      )}
+
+      <section>
         <h2>Consultas</h2>
         {consultasOrdenadas.length === 0 ? (
           <p>Sin consultas registradas</p>
@@ -138,7 +266,22 @@ export default function DetallePacientePage() {
               <li key={c.id}>
                 <p>{formatoFecha(c.created_at)}</p>
                 <p>{c.motivo_reportado ?? "—"}</p>
-                {c.diagnostico_doctora && <p>Diagnóstico: {c.diagnostico_doctora}</p>}
+                {c.diagnostico_doctora ? (
+                  <p>Diagnóstico: {c.diagnostico_doctora}</p>
+                ) : (
+                  <div>
+                    <textarea
+                      value={diagnosticos[c.id] || ""}
+                      onChange={(e) =>
+                        setDiagnosticos((prev) => ({ ...prev, [c.id]: e.target.value }))
+                      }
+                      placeholder="Escribe el diagnóstico..."
+                    />
+                    <button onClick={() => guardarDiagnostico(c.id)}>
+                      Guardar diagnóstico
+                    </button>
+                  </div>
+                )}
               </li>
             ))}
           </ul>
