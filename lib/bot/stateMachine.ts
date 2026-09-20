@@ -22,6 +22,7 @@ import {
 
 type BotState =
   | "BIENVENIDA"
+  | "REFERIDO_CODIGO"
   | "CONSENTIMIENTO"
   | "NOMBRE"
   | "MOTIVO"
@@ -54,6 +55,8 @@ export async function handleMessage(waId: string, rawText: string): Promise<stri
   switch (paciente.bot_state as BotState) {
     case "BIENVENIDA":
       return handleBienvenida(paciente, text);
+    case "REFERIDO_CODIGO":
+      return handleReferidoCodigo(paciente, text);
     case "CONSENTIMIENTO":
       return handleConsentimiento(paciente, text);
     case "RECHAZADO":
@@ -75,7 +78,7 @@ async function handleBienvenida(paciente: Paciente, text: string): Promise<strin
   if (text === "1") {
     await prisma.paciente.update({
       where: { phone_number: paciente.phone_number },
-      data: { tipo_contacto: "referido", bot_state: "CONSENTIMIENTO" },
+      data: { tipo_contacto: "referido", bot_state: "REFERIDO_CODIGO" },
     });
     return MENSAJE_REFERIDO_CODIGO;
   }
@@ -97,6 +100,39 @@ async function handleBienvenida(paciente: Paciente, text: string): Promise<strin
   }
 
   return MENSAJE_BIENVENIDA;
+}
+
+async function handleReferidoCodigo(paciente: Paciente, text: string): Promise<string> {
+  // Buscar código QR en el texto (formato: REF_DR_... o DR_...)
+  const codigoMatch = text.match(/(?:REF_)?(DR_[A-Z0-9_]+)/i);
+  
+  if (codigoMatch && codigoMatch[1]) {
+    const codigo_qr = codigoMatch[1].toUpperCase();
+    
+    // Buscar doctor por codigo_qr
+    const doctor = await prisma.doctorReferidor.findUnique({
+      where: { codigo_qr },
+    });
+    
+    if (doctor) {
+      // Asignar doctor_referidor_id al paciente
+      await prisma.paciente.update({
+        where: { phone_number: paciente.phone_number },
+        data: { 
+          doctor_referidor_id: doctor.id,
+          bot_state: "CONSENTIMIENTO" 
+        },
+      });
+      return MENSAJE_CONSENTIMIENTO;
+    }
+  }
+  
+  // Si no se encontró código o no es válido, continuar sin asignar doctor
+  await prisma.paciente.update({
+    where: { phone_number: paciente.phone_number },
+    data: { bot_state: "CONSENTIMIENTO" },
+  });
+  return MENSAJE_CONSENTIMIENTO;
 }
 
 function normalizarTexto(text: string): string {
