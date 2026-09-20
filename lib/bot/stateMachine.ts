@@ -64,6 +64,8 @@ export async function handleMessage(waId: string, rawText: string): Promise<stri
       return handleMotivo(paciente, text);
     case "CIERRE":
       return handleCierre(paciente, text);
+    case "RECURRENTE":
+      return handleRecurrente(paciente, text);
     default:
       return handleBienvenida(paciente, text);
   }
@@ -268,4 +270,79 @@ async function handleCierre(paciente: Paciente, text: string): Promise<string> {
     Nombre: paciente.nombre ?? "paciente",
     ultimo_motivo: "su consulta anterior",
   });
+}
+
+async function handleRecurrente(paciente: Paciente, text: string): Promise<string> {
+  const keyword = matchKeyword(text);
+
+  // Si es keyword → info bajo demanda (igual que handleCierre)
+  if (keyword === "direccion") {
+    const info = await prisma.consultorioInfo.findUnique({ where: { id: 1 } });
+    if (!info) {
+      return "Lo siento, no tengo la información de dirección disponible en este momento.";
+    }
+    return buildMessage(MENSAJE_DIRECCION, {
+      direccion_texto: info.direccion_texto,
+      maps_url: info.maps_url,
+    });
+  }
+
+  if (keyword === "horario") {
+    const info = await prisma.consultorioInfo.findUnique({ where: { id: 1 } });
+    if (!info) {
+      return "Lo siento, no tengo la información de horarios disponible en este momento.";
+    }
+    return buildMessage(MENSAJE_HORARIO, {
+      horarios_texto: info.horarios_texto,
+    });
+  }
+
+  if (keyword === "servicio") {
+    const textLower = text.toLowerCase();
+    const serviceSlugs = ["corona", "limpieza", "blanqueamiento", "brackets", "implante"];
+    const matchedSlug = serviceSlugs.find((slug) => textLower.includes(slug));
+
+    if (matchedSlug) {
+      const servicio = await prisma.servicio.findUnique({ where: { slug: matchedSlug } });
+      if (servicio) {
+        return `${servicio.descripcion_corta} ${DISCLAIMER_SERVICIO}`;
+      }
+    }
+
+    return `Puedo orientarle sobre nuestros servicios: corona, limpieza, blanqueamiento, brackets, implante. ¿Sobre cuál le gustaría saber más?`;
+  }
+
+  // Si no es keyword → interpretar como nuevo motivo
+  const sanitizado = text.trim().slice(0, 500);
+  
+  if (!sanitizado) {
+    return buildMessage(MENSAJE_RECURRENTE, {
+      Nombre: paciente.nombre ?? "paciente",
+      ultimo_motivo: "su consulta anterior",
+    });
+  }
+
+  // Crear nueva consulta
+  await prisma.consulta.create({
+    data: {
+      paciente_phone: paciente.phone_number,
+      motivo_reportado: sanitizado,
+    },
+  });
+
+  // Avanzar a CIERRE
+  await prisma.paciente.update({
+    where: { phone_number: paciente.phone_number },
+    data: {
+      bot_state: "CIERRE",
+      estado: "registrado",
+    },
+  });
+
+  // Fire-and-forget: enviar alerta SMTP
+  sendNewPatientAlert(paciente.nombre ?? "Paciente", sanitizado).catch((err) => {
+    console.error("Error enviando alerta SMTP:", err);
+  });
+
+  return MENSAJE_CIERRE_HORARIO;
 }
