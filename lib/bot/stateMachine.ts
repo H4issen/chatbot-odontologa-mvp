@@ -7,6 +7,8 @@ import {
   MENSAJE_BIENVENIDA,
   MENSAJE_CONSENTIMIENTO,
   MENSAJE_REFERIDO_CODIGO,
+  MENSAJE_SOLICITUD_NOMBRE,
+  MENSAJE_RECHAZADO,
 } from "./messages";
 
 type BotState =
@@ -43,6 +45,8 @@ export async function handleMessage(waId: string, rawText: string): Promise<stri
   switch (paciente.bot_state as BotState) {
     case "BIENVENIDA":
       return handleBienvenida(paciente, text);
+    case "CONSENTIMIENTO":
+      return handleConsentimiento(paciente, text);
     default:
       return handleBienvenida(paciente, text);
   }
@@ -74,4 +78,43 @@ async function handleBienvenida(paciente: Paciente, text: string): Promise<strin
   }
 
   return MENSAJE_BIENVENIDA;
+}
+
+function normalizarTexto(text: string): string {
+  return text
+    .trim()
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "");
+}
+
+async function handleConsentimiento(paciente: Paciente, text: string): Promise<string> {
+  const normalizado = normalizarTexto(text);
+
+  if (normalizado === "si" || normalizado === "aceptar" || normalizado === "acepto") {
+    await prisma.paciente.update({
+      where: { phone_number: paciente.phone_number },
+      data: {
+        consentimiento: "aceptado",
+        consentimiento_at: new Date(),
+        bot_state: "NOMBRE",
+        estado: "registrado",
+      },
+    });
+    return MENSAJE_SOLICITUD_NOMBRE;
+  }
+
+  if (normalizado === "no") {
+    await prisma.paciente.update({
+      where: { phone_number: paciente.phone_number },
+      data: {
+        consentimiento: "rechazado",
+        consentimiento_at: new Date(),
+        bot_state: "RECHAZADO",
+      },
+    });
+    return MENSAJE_RECHAZADO;
+  }
+
+  return MENSAJE_CONSENTIMIENTO;
 }
