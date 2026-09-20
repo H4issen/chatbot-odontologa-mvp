@@ -1,7 +1,7 @@
 // lib/auth.ts — T-09
 // Helper de sesión con iron-session y helpers bcrypt.
 
-import { getIronSession, SessionOptions } from "iron-session";
+import { getIronSession, sealData, SessionOptions } from "iron-session";
 import { sessionConfig } from "./session.config";
 
 // bcrypt nativo no carga en Edge Runtime (middleware): importación lazy.
@@ -19,12 +19,19 @@ export async function getSession(req: Request): Promise<SessionData | null> {
   return session.userId ? { userId: session.userId } : null;
 }
 
-export function createSessionResponse(userId: number, baseResponse: Response): Response {
+export async function createSessionResponse(userId: number, baseResponse: Response): Promise<Response> {
+  if (!process.env.SESSION_SECRET) {
+    throw new Error("auth.ts: falta SESSION_SECRET en process.env");
+  }
   const session = { userId };
+  const sealed = await sealData(session, {
+    password: sessionConfig.password,
+    ttl: sessionConfig.cookieOptions.maxAge,
+  });
   const response = new Response(baseResponse.body, baseResponse);
   response.headers.append(
     "Set-Cookie",
-    `chatbot_session=${JSON.stringify(session)}; HttpOnly; Secure; SameSite=Lax; Max-Age=43200; Path=/`
+    `${sessionConfig.cookieName}=${sealed}; HttpOnly; Secure; SameSite=Lax; Max-Age=${sessionConfig.cookieOptions.maxAge}; Path=/`
   );
   return response;
 }

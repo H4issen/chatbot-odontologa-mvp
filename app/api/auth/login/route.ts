@@ -79,7 +79,7 @@ export async function POST(request: Request) {
       { status: 200 }
     );
 
-    return createSessionResponse(user.id, baseResponse);
+    return await createSessionResponse(user.id, baseResponse);
   } catch (error) {
     console.error('Error en login:', error);
     return NextResponse.json(
