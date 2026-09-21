@@ -60,7 +60,8 @@ Regla: adjunta SOLO lo indicado por T. 1 tarea=1 commit. Prompt base siempre:
 - T-20: recurrente. Adj: tasks T-20 + plan §4
 - T-35: reset 1h. Adj: tasks T-35 + plan §6
 - T-42: acciones ARCO. Adj: tasks T-42 + plan §2,5
-- T-47: webhook Meta + plantilla. Adj: tasks T-47 + plan §7
+- T-47a: registrar plantilla Meta (manual guiado, YA en paralelo a T-46). Adj: tasks T-47a
+- T-47b: webhook Meta con URL de T-46 (manual guiado). Adj: tasks T-47b
 
 ## Hechas (no tocar)
 - T-02: schema Prisma (Sonnet 4.5, cerrada)
@@ -78,8 +79,8 @@ de paciente. Decisión: fallback mínimo, la doctora reparte los QR en persona.
 ## Alternativas si Max se agota (mismo rigor, menor costo)
 Orden de fallback para las 7 obligatorias:
 1. Sonnet 4.5 free (Antigravity, por cuota) — mejor auditor
-2. Kimi K3 (Go/ClinePass) — secuencias largas agénticas, E2E T-47
+2. Kimi K3 (Go/ClinePass) — secuencias largas agénticas, E2E T-48
 3. DeepSeek V4 Pro (Go/ClinePass) — solo si aceptas su opt-in China; evita en auth/datos
 4. Muse Spark (Go, 45k req) — riesgo medio con alto límite
 
-Regla fallback: pide `audita en modo crítico y marca [RIESGO]/[ACLARAR]` y no despliegues a prod sin una revisión Max/Sonnet posterior en T-12, T-35, T-42, T-47.
+Regla fallback: pide `audita en modo crítico y marca [RIESGO]/[ACLARAR]` y no despliegues a prod sin una revisión Max/Sonnet posterior en T-12, T-35, T-42, T-47b.

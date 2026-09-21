@@ -1168,30 +1168,41 @@
 
 ---
 
-### T-47 `[infra]` `[RIESGO]`
-**Objetivo:** Configurar webhook en Meta Developers y registrar plantilla de reactivación.
+### T-47a `[infra]` (manual guiado: lo ejecuta el dueño con el arquitecto, NO el ejecutor)
+**Objetivo:** Registrar la plantilla de reactivación en Meta Business Manager para arrancar el reloj de aprobación (24–72h). No requiere URL de Railway: ejecutar YA, en paralelo a T-46.
 
-**Archivos a tocar:**
-- No crea archivos de código. Acciones en Meta Developers:
-  1. En Meta Developers → App → WhatsApp → Configuración → Webhook:
-     - Callback URL: `https://<url-railway>/api/whatsapp`
-     - Verify Token: valor exacto de `VERIFY_TOKEN`
-  2. Suscribir a: `messages`, `message_deliveries`, `message_reads`
-  3. Meta hace `GET /api/whatsapp?hub.mode=subscribe&hub.verify_token=...` → debe retornar challenge
-   4. Registrar plantilla en Meta Business Manager:
-      - Nombre: `reactivacion_consulta` (o similar)
-      - Cuerpo: `"Hola {{1}}, soy la Dra. [DOCTOR_NAME], retomo su consulta sobre {{2}}. ¿Continuamos con su cita?"`
-      - Código de idioma exactamente `es` — debe coincidir letra por letra con `language: { code: "es" }` de `lib/whatsapp.ts` (T-07); si se aprueba como `es_MX`, actualizar el código antes del go-live
-      - Esperar aprobación (24–72h) — **BLOQUEANTE para go-live**
+**Acciones (Meta Business Manager):**
+- Nueva plantilla: nombre `reactivacion_consulta`
+- Idioma exactamente `es` — debe coincidir letra por letra con `language: { code: "es" }` de `lib/whatsapp.ts` (ver T-07); si se aprueba como `es_MX`, hay que cambiar esa línea
+- Cuerpo: `"Hola {{1}}, soy la Dra. [DOCTOR_NAME], retomo su consulta sobre {{2}}. ¿Continuamos con su cita?"`
+- Enviar a revisión y anotar fecha/hora de envío
+
+**Dependencias:** ninguna (adelantable a T-46)
+
+**Criterio testeable:**
+- Plantilla en estado "En revisión" (captura o nota con fecha/hora)
+- La APROBACIÓN (puede tardar 72h) es gate de T-48 punto 7 y T-49, no de T-47b
+
+**Commit:** — (sin cambios de código)
+
+---
+
+### T-47b `[infra]` (manual guiado: lo ejecuta el dueño con el arquitecto, NO el ejecutor)
+**Objetivo:** Configurar el webhook en Meta Developers con la URL pública de T-46.
+
+**Acciones (Meta Developers → App → WhatsApp → Configuración → Webhook):**
+- Callback URL: `https://<url-railway>/api/whatsapp`
+- Verify Token: valor exacto de `VERIFY_TOKEN`
+- Suscribir a: `messages`, `message_deliveries`, `message_reads`
+- Meta hace `GET /api/whatsapp?hub.mode=subscribe&hub.verify_token=...` → debe retornar challenge
 
 **Dependencias:** T-46
 
 **Criterio testeable:**
 - Meta muestra webhook como `"Connected"` (punto verde)
 - Enviar mensaje de prueba desde Meta → bot responde con BIENVENIDA
-- Plantilla aparece como `"Aprobada"` en Meta Business Manager (puede tardar 72h)
 
-**Commit:** `infra: webhook Meta configurado y plantilla registrada`
+**Commit:** `infra: webhook Meta configurado`
 
 ---
 
@@ -1212,7 +1223,7 @@
 8. `DELETE` ARCO → bot trata al `wa_id` como nuevo en siguiente contacto
 9. Middleware T-10 (re-prueba diferida): sin cookie, `GET /panel` → redirect a `/login` (Next usa 307, no 302) y `GET /api/pacientes` → 401 con `app/` ya existente
 
-**Dependencias:** T-47, T-42, T-40
+**Dependencias:** T-47a (plantilla aprobada, gate del punto 7), T-47b, T-42, T-40
 
 **Criterio testeable:** los 9 puntos del checklist pasan sin error y quedan documentados en `docs/test-e2e.md`
 
