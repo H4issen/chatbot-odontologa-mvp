@@ -16,6 +16,7 @@ interface Consultorio {
   direccion_texto: string;
   maps_url: string;
   horarios_texto: string;
+  whatsapp_number: string | null;
 }
 
 interface Doctor {
@@ -33,6 +34,11 @@ function esUrlValida(valor: string): boolean {
   }
 }
 
+function linkDoctor(codigo: string, numero: string | null): string {
+  const texto = encodeURIComponent(`REF_${codigo}`);
+  return numero ? `https://wa.me/${numero}?text=${texto}` : `https://wa.me/?text=${texto}`;
+}
+
 export default function ContenidoPage() {
   const [servicios, setServicios] = useState<Servicio[] | null>(null);
   const [formularios, setFormularios] = useState<
@@ -40,7 +46,7 @@ export default function ContenidoPage() {
   >({});
   const [avisos, setAvisos] = useState<Record<string, string>>({});
   const [consultorio, setConsultorio] = useState<Consultorio | null>(null);
-  const [formConsultorio, setFormConsultorio] = useState<Consultorio>({
+  const [formConsultorio, setFormConsultorio] = useState<Omit<Consultorio, "whatsapp_number">>({
     direccion_texto: "",
     maps_url: "",
     horarios_texto: "",
@@ -172,8 +178,10 @@ export default function ContenidoPage() {
         setAvisoConsultorio(typeof err.error === "string" ? err.error : "No se pudo guardar");
         return;
       }
-      const actualizado: Consultorio = await res.json();
-      setConsultorio(actualizado);
+      const actualizado: Omit<Consultorio, "whatsapp_number"> = await res.json();
+      setConsultorio((prev) =>
+        prev ? { ...prev, ...actualizado } : { ...actualizado, whatsapp_number: null }
+      );
       setAvisoConsultorio("Guardado");
     } catch {
       setAvisoConsultorio("No se pudo guardar");
@@ -222,7 +230,7 @@ export default function ContenidoPage() {
   }
 
   async function copiarLink(id: number, codigo: string) {
-    const link = `https://wa.me/?text=${encodeURIComponent(`REF_${codigo}`)}`;
+    const link = linkDoctor(codigo, consultorio?.whatsapp_number ?? null);
     try {
       await navigator.clipboard.writeText(link);
       setCopiado(id);
@@ -234,164 +242,227 @@ export default function ContenidoPage() {
 
   if (!servicios) {
     return (
-      <main className="container">
-        <p>Cargando contenido...</p>
-      </main>
+      <div className="text-center py-5">
+        <p className="text-muted">Cargando contenido...</p>
+      </div>
     );
   }
 
   return (
-    <main className="container">
-      <h1>Contenido</h1>
+    <div>
+      <h1 className="h3 mb-4">Contenido</h1>
 
-      <section>
-        <h2>Servicios</h2>
-        {servicios.map((s) => {
-          const form = formularios[s.slug] ?? { descripcion: "", precio: "" };
-          return (
-            <article key={s.slug}>
-              <h3>{s.nombre}</h3>
-              <p>Identificador: {s.slug}</p>
-              <label>
-                Descripción corta (máximo 300 caracteres)
-                <textarea
-                  className="form-control"
-                  value={form.descripcion}
-                  maxLength={400}
-                  onChange={(e) =>
-                    setFormularios((prev) => ({
-                      ...prev,
-                      [s.slug]: { ...prev[s.slug], descripcion: e.target.value },
-                    }))
-                  }
-                />
-              </label>
-              <p>
-                {form.descripcion.length}/300
-              </p>
-              <label>
-                Precio desde (opcional)
+      <div className="card mb-4 shadow-sm">
+        <div className="card-header bg-light">
+          <h2 className="h5 mb-0">Servicios</h2>
+        </div>
+        <div className="card-body">
+          <div className="row g-3">
+            {servicios.map((s) => {
+              const form = formularios[s.slug] ?? { descripcion: "", precio: "" };
+              return (
+                <div key={s.slug} className="col-12 col-lg-6">
+                  <div className="border rounded p-3 h-100 d-flex flex-column justify-content-between">
+                    <div>
+                      <div className="d-flex justify-content-between align-items-center mb-2">
+                        <h3 className="h6 mb-0 fw-bold">{s.nombre}</h3>
+                        <span className="badge bg-light text-dark border">{s.slug}</span>
+                      </div>
+                      <div className="mb-2">
+                        <label className="form-label small mb-1">
+                          Descripción corta (máximo 300 caracteres)
+                        </label>
+                        <textarea
+                          className="form-control"
+                          rows={3}
+                          value={form.descripcion}
+                          maxLength={400}
+                          onChange={(e) =>
+                            setFormularios((prev) => ({
+                              ...prev,
+                              [s.slug]: { ...prev[s.slug], descripcion: e.target.value },
+                            }))
+                          }
+                        />
+                        <div className="text-muted small text-end mt-1">
+                          {form.descripcion.length}/300
+                        </div>
+                      </div>
+                      <div className="mb-3">
+                        <label className="form-label small mb-1">
+                          Precio desde (opcional)
+                        </label>
+                        <input
+                          className="form-control"
+                          type="text"
+                          value={form.precio}
+                          onChange={(e) =>
+                            setFormularios((prev) => ({
+                              ...prev,
+                              [s.slug]: { ...prev[s.slug], precio: e.target.value },
+                            }))
+                          }
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <button
+                        className="btn btn-primary btn-sm"
+                        onClick={() => guardar(s.slug)}
+                      >
+                        Guardar
+                      </button>
+                      {avisos[s.slug] && (
+                        <p className="alert alert-info py-1 px-2 mt-2 mb-0 small">
+                          {avisos[s.slug]}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+
+      <div className="card mb-4 shadow-sm">
+        <div className="card-header bg-light">
+          <h2 className="h5 mb-0">Consultorio</h2>
+        </div>
+        <div className="card-body">
+          {!consultorio ? (
+            <p className="text-muted mb-0">Cargando consultorio...</p>
+          ) : (
+            <div style={{ maxWidth: "600px" }}>
+              <div className="mb-3">
+                <label className="form-label">Dirección</label>
                 <input
                   className="form-control"
                   type="text"
-                  value={form.precio}
+                  value={formConsultorio.direccion_texto}
                   onChange={(e) =>
-                    setFormularios((prev) => ({
-                      ...prev,
-                      [s.slug]: { ...prev[s.slug], precio: e.target.value },
-                    }))
+                    setFormConsultorio((prev) => ({ ...prev, direccion_texto: e.target.value }))
                   }
                 />
-              </label>
-              <button className="btn btn-primary" onClick={() => guardar(s.slug)}>Guardar</button>
-              {avisos[s.slug] && <p className="alert alert-info">{avisos[s.slug]}</p>}
-            </article>
-          );
-        })}
-      </section>
-
-      <section>
-        <h2>Consultorio</h2>
-        {!consultorio ? (
-          <p>Cargando consultorio...</p>
-        ) : (
-          <div>
-            <label>
-              Dirección
-              <input
-                className="form-control"
-                type="text"
-                value={formConsultorio.direccion_texto}
-                onChange={(e) =>
-                  setFormConsultorio((prev) => ({ ...prev, direccion_texto: e.target.value }))
-                }
-              />
-            </label>
-            <label>
-              URL de Maps
-              <input
-                className="form-control"
-                type="url"
-                value={formConsultorio.maps_url}
-                onChange={(e) =>
-                  setFormConsultorio((prev) => ({ ...prev, maps_url: e.target.value }))
-                }
-              />
-            </label>
-            <label>
-              Horarios
-              <input
-                className="form-control"
-                type="text"
-                value={formConsultorio.horarios_texto}
-                onChange={(e) =>
-                  setFormConsultorio((prev) => ({ ...prev, horarios_texto: e.target.value }))
-                }
-              />
-            </label>
-            <button className="btn btn-primary" onClick={guardarConsultorio}>Guardar</button>
-            {avisoConsultorio && <p className="alert alert-info">{avisoConsultorio}</p>}
-          </div>
-        )}
-      </section>
-
-      <section>
-        <h2>Doctores referidores</h2>
-        {!doctores ? (
-          <p>Cargando doctores...</p>
-        ) : doctores.length === 0 ? (
-          <p>Sin doctores registrados aún</p>
-        ) : (
-          <table className="table table-striped">
-            <thead>
-              <tr>
-                <th>Nombre</th>
-                <th>Código</th>
-                <th>Link</th>
-                <th>Acciones</th>
-              </tr>
-            </thead>
-            <tbody>
-              {doctores.map((d) => (
-                <tr key={d.id}>
-                  <td>{d.nombre}</td>
-                  <td>
-                    <span className="badge bg-secondary">{d.codigo_qr}</span>
-                  </td>
-                  <td>
-                    <input
-                      className="form-control"
-                      type="text"
-                      readOnly
-                      value={`https://wa.me/?text=${encodeURIComponent(`REF_${d.codigo_qr}`)}`}
-                    />
-                    <button className="btn btn-secondary" onClick={() => copiarLink(d.id, d.codigo_qr)}>
-                      {copiado === d.id ? "Copiado" : "Copiar link"}
-                    </button>
-                  </td>
-                  <td>
-                    <button className="btn btn-danger" onClick={() => eliminarDoctor(d.id, d.nombre)}>Eliminar</button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
-        <div>
-          <h3>Nuevo doctor</h3>
-          <label>
-            Nombre
-            <input
-              className="form-control"
-              type="text"
-              value={nuevoDoctor}
-              onChange={(e) => setNuevoDoctor(e.target.value)}
-            />
-          </label>
-          <button className="btn btn-primary" onClick={crearDoctor}>Nuevo doctor</button>
-          {avisoDoctores && <p className="alert alert-info">{avisoDoctores}</p>}
+              </div>
+              <div className="mb-3">
+                <label className="form-label">URL de Maps</label>
+                <input
+                  className="form-control"
+                  type="url"
+                  value={formConsultorio.maps_url}
+                  onChange={(e) =>
+                    setFormConsultorio((prev) => ({ ...prev, maps_url: e.target.value }))
+                  }
+                />
+              </div>
+              <div className="mb-3">
+                <label className="form-label">Horarios</label>
+                <input
+                  className="form-control"
+                  type="text"
+                  value={formConsultorio.horarios_texto}
+                  onChange={(e) =>
+                    setFormConsultorio((prev) => ({ ...prev, horarios_texto: e.target.value }))
+                  }
+                />
+              </div>
+              <button className="btn btn-primary" onClick={guardarConsultorio}>
+                Guardar
+              </button>
+              {avisoConsultorio && (
+                <p className="alert alert-info mt-3 mb-0">{avisoConsultorio}</p>
+              )}
+            </div>
+          )}
         </div>
-      </section>
-    </main>
+      </div>
+
+      <div className="card mb-4 shadow-sm">
+        <div className="card-header bg-light">
+          <h2 className="h5 mb-0">Doctores referidores</h2>
+        </div>
+        <div className="card-body">
+          {consultorio && !consultorio.whatsapp_number && (
+            <p className="alert alert-warning">
+              Configura BOT_WHATSAPP_NUMBER en el servidor (formato Perú: 51 + 9 dígitos)
+              para que los links incluyan el número del bot.
+            </p>
+          )}
+          {!doctores ? (
+            <p className="text-muted mb-0">Cargando doctores...</p>
+          ) : doctores.length === 0 ? (
+            <p className="text-muted mb-3">Sin doctores registrados aún</p>
+          ) : (
+            <div className="table-responsive mb-4">
+              <table className="table table-hover table-striped align-middle mb-0">
+                <thead className="table-light">
+                  <tr>
+                    <th>Nombre</th>
+                    <th>Código</th>
+                    <th style={{ minWidth: "260px" }}>Link</th>
+                    <th style={{ width: "100px" }}>Acciones</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {doctores.map((d) => (
+                    <tr key={d.id}>
+                      <td className="fw-semibold">{d.nombre}</td>
+                      <td>
+                        <span className="badge bg-secondary">{d.codigo_qr}</span>
+                      </td>
+                      <td>
+                        <div className="input-group input-group-sm">
+                          <input
+                            className="form-control"
+                            type="text"
+                            readOnly
+                            value={linkDoctor(d.codigo_qr, consultorio?.whatsapp_number ?? null)}
+                          />
+                          <button
+                            className="btn btn-outline-secondary"
+                            onClick={() => copiarLink(d.id, d.codigo_qr)}
+                          >
+                            {copiado === d.id ? "Copiado" : "Copiar link"}
+                          </button>
+                        </div>
+                      </td>
+                      <td>
+                        <button
+                          className="btn btn-outline-danger btn-sm"
+                          onClick={() => eliminarDoctor(d.id, d.nombre)}
+                        >
+                          Eliminar
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+
+          <div className="card bg-light border-light p-3" style={{ maxWidth: "420px" }}>
+            <h3 className="h6 mb-3">Nuevo doctor</h3>
+            <div className="mb-3">
+              <label className="form-label">Nombre</label>
+              <input
+                className="form-control"
+                type="text"
+                value={nuevoDoctor}
+                onChange={(e) => setNuevoDoctor(e.target.value)}
+              />
+            </div>
+            <button className="btn btn-primary" onClick={crearDoctor}>
+              Nuevo doctor
+            </button>
+            {avisoDoctores && (
+              <p className="alert alert-info mt-3 mb-0">{avisoDoctores}</p>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
   );
 }

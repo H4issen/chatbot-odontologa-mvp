@@ -10,6 +10,12 @@ const consultorioSchema = z.object({
   horarios_texto: z.string().min(1),
 });
 
+// Número del bot (Perú: 51 + 9 dígitos). Solo se expone si pasa la validación.
+function getWhatsappNumber(): string | null {
+  const numero = (process.env.BOT_WHATSAPP_NUMBER || "").trim();
+  return /^51\d{8,9}$/.test(numero) ? numero : null;
+}
+
 // GET /api/admin/consultorio
 export async function GET(request: Request) {
   try {
@@ -26,7 +32,7 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: 'Consultorio no encontrado' }, { status: 404 });
     }
 
-    return NextResponse.json(consultorio);
+    return NextResponse.json({ ...consultorio, whatsapp_number: getWhatsappNumber() });
   } catch (error) {
     console.error('Error en GET /api/admin/consultorio:', error);
     return NextResponse.json({ error: 'Error interno del servidor' }, { status: 500 });
