@@ -544,6 +544,7 @@ META_TOKEN=""                    # Bearer token para ENVIAR mensajes (Graph API)
 META_APP_SECRET=""               # Para validar firma X-Hub-Signature-256 (WEBHOOK)
 VERIFY_TOKEN=""                  # Token secreto para verificación GET de Meta
 PHONE_NUMBER_ID=""               # ID del número virtual registrado en Meta
+BOT_WHATSAPP_NUMBER=""          # Número Perú del bot para QRs: 51 + 9 dígitos (ej. 51987654321). Ver T-44c.
 
 # ── Sesión ─────────────────────────────────────────────
 SESSION_SECRET=""                # Mín. 32 chars aleatorios. Rotar si se compromete.

@@ -18,6 +18,7 @@ Regla: adjunta SOLO lo indicado por T. 1 tarea=1 commit. Prompt base siempre:
 - T-43: contenido servicios. Adj: tasks T-43 + plan §2
 - T-44: consultorio + QR. Adj: tasks T-44 + plan §2
 - T-44b: pase Bootstrap solo-CSS en todas las rutas (solo tras T-44). Adj: tasks T-44b
+- T-44c: QR Perú con número del bot + env (bloqueante go-live). Adj: tasks T-44c
 - T-45: package prod. Adj: tasks T-45 + plan §7
 - T-46: package prod + checklist deploy. Adj: tasks T-46 + plan §7
 - T-48: E2E doc 9 puntos. Adj: tasks T-48 + spec §7

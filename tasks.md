@@ -19,7 +19,7 @@
 - `.gitignore` → `.env*`, `node_modules/`, `.next/`, `*.tsbuildinfo`
 - `package.json` → dependencias: `next@14`, `typescript`, `@prisma/client`, `prisma`, `zod`, `bcrypt` (nativo; T-03 lo cambió desde `bcryptjs` — ver plan B en T-46), `iron-session`, `nodemailer`, `@types/*`
 - `tsconfig.json` → `strict: true`, `paths: { "@/*": ["./*"] }`
-- `.env.example` → las 14 keys exactas del plan §7.1, valores vacíos, comentarios explicativos
+- `.env.example` → las 15 keys exactas del plan §7.1, valores vacíos, comentarios explicativos
 - `README.md` → comandos: `npm i`, `cp .env.example .env`, `npx prisma migrate dev`, `npm run dev`
 
 **Dependencias:** ninguna
@@ -28,7 +28,7 @@
 - `git status` no muestra `.env` (`.gitignore` funciona)
 - `npm install` termina sin errores
 - `npx tsc --noEmit` no falla en proyecto vacío
-- `.env.example` tiene exactamente las 14 keys del plan §7.1
+- `.env.example` tiene exactamente las 15 keys del plan §7.1
 
 **Commit:** `infra: repo inicial Next.js 14 con .gitignore y .env.example`
 
@@ -1058,7 +1058,7 @@
 - `app/panel/contenido/page.tsx` (completar con secciones consultorio y doctores)
   - Sección Consultorio: inputs `direccion_texto`, `maps_url`, `horarios_texto` + botón `[Guardar]` → `PATCH /api/admin/consultorio`
   - Sección Doctores Referidores:
-    - Lista doctores con `nombre` + `codigo_qr` + link copyable `wa.me/521XXXXXXXXXX?text=REF_<codigo_qr>` [ACLARAR]
+    - Lista doctores con `nombre` + `codigo_qr` + link copyable `wa.me/<BOT_WHATSAPP_NUMBER>?text=REF_<codigo_qr>` (Perú: `51` + 9 dígitos; prohibido `521`) [ACLARAR]
     - **[ACLARAR]** spec §11 dice "QR imprimible" pero ninguna librería QR está en el plan ni en `package.json`. ¿Generar imagen QR con `npm qrcode`? ¿O solo mostrar el link wa.me copyable es suficiente para MVP? Sin respuesta → solo link copyable, sin imagen QR.
     - `[Nuevo doctor]` → input nombre → `POST /api/admin/doctores` → muestra `codigo_qr` generado
     - `[Eliminar]` por doctor → `DELETE /api/admin/doctores/<id>` + confirmación
@@ -1093,6 +1093,27 @@
 - Sin `react-bootstrap` en `package.json`, sin imports de JS de Bootstrap
 
 **Commit:** `frontend: pase Bootstrap solo-CSS en todas las rutas`
+
+---
+
+### T-44c `[frontend]` (bloqueante go-live: sin número en el QR no hay captación ni atribución)
+**Objetivo:** Números Perú + QR con número del bot.
+
+**Archivos a tocar:**
+- `.env.example` → añadir `BOT_WHATSAPP_NUMBER=""` (Perú: `51` + 9 dígitos, móviles empiezan con 9, ej. `51987654321`). Actualizar conteos T-01/plan §7.1 a 15 keys.
+- `app/api/admin/consultorio/route.ts` (GET) → incluir `whatsapp_number` leído del env (solo lectura). Validar formato `/^51\d{8,9}$/`; forma esperada móviles `519XXXXXXXX`.
+- `app/panel/contenido/page.tsx` (~225, ~407) → links `https://wa.me/${numero}?text=${encodeURIComponent("REF_" + codigo)}`.
+- Prohibido hardcodear `521` o asumir México en links, ejemplos o validaciones. Los `wa_id` de Meta se pasan tal cual (ya vienen normalizados).
+
+**Dependencias:** T-44, T-28
+
+**Criterio testeable:**
+- `.env.example` trae 15 keys con `BOT_WHATSAPP_NUMBER` vacía
+- GET consultorio incluye `whatsapp_number` del env
+- QR renderiza `wa.me/51…?text=REF_…` exacto (con número, nunca `wa.me/?text=` solo)
+- Verificación manual documentada: escaneo abre chat con el bot + texto REF precargado (hacer antes de imprimir tiraje)
+
+**Commit:** `fix(qr): links Perú con número del bot + env`
 
 ---
 
@@ -1211,6 +1232,7 @@
   - Cómo editar servicios, horarios y dirección
   - Qué hace el bot (nunca diagnostica, nunca agenda, confirma la Dra. por WhatsApp)
   - Qué hacer si una paciente quiere borrar sus datos (ARCO)
+  - QR: prohibido imprimir tiraje sin escaneo físico verificado con teléfono real (chat abre + REF precargado; evidencia en T-44c)
 
 **Dependencias:** T-48
 
@@ -1218,6 +1240,7 @@
 - Doctora entra al panel desde **su** dispositivo (no la laptop de desarrollo)
 - Doctora cambia contraseña temporal exitosamente en primer login
 - Plantilla Meta está aprobada antes de este paso (R4 del plan)
+- Un QR de prueba escaneado con teléfono real abre el chat + REF precargado antes de autorizar cualquier tiraje
 
 **Commit:** `infra: guia entrega a doctora`
 
@@ -1302,7 +1325,7 @@ T-01 (repo)
 | T-22 | backend | `backend(api): GET /api/pacientes lista paginada con ventana` |
 | T-23 | backend | `backend(api): GET /api/pacientes/[phone] detalle con consultas y ventana` |
 | T-24 | backend | `backend(api): PATCH /api/pacientes/[phone] estado y nombre` |
-| T-25 | backend | `backend(api): DELETE ARCO deja phone+rechazado como bloqueo` |
+| T-25 | backend | `backend(api): DELETE ARCO borrado total sin bloqueo` |
 | T-26 | backend | `backend(api): consultas GET lista y PATCH diagnostico doctora` |
 | T-27 | backend | `backend(api): admin GET y PATCH servicios` |
 | T-28 | backend | `backend(api): admin GET y PATCH consultorio_info` |
