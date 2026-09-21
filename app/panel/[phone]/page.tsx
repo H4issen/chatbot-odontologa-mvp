@@ -159,18 +159,20 @@ export default function DetallePacientePage() {
 
   if (noEncontrado) {
     return (
-      <main className="container">
-        <p>Paciente no encontrado</p>
-        <a href="/panel">Volver a la lista</a>
-      </main>
+      <div className="alert alert-warning my-4">
+        <p className="mb-2">Paciente no encontrado</p>
+        <a href="/panel" className="btn btn-outline-primary btn-sm">
+          Volver a la lista
+        </a>
+      </div>
     );
   }
 
   if (!detalle) {
     return (
-      <main className="container">
-        <p>Cargando paciente...</p>
-      </main>
+      <div className="text-center py-5">
+        <p className="text-muted">Cargando paciente...</p>
+      </div>
     );
   }
 
@@ -179,78 +181,126 @@ export default function DetallePacientePage() {
   );
 
   return (
-    <main className="container">
-      <a href="/panel">Volver a la lista</a>
+    <div>
+      <a href="/panel" className="btn btn-link px-0 mb-3 text-decoration-none">
+        &larr; Volver a la lista
+      </a>
 
-      <section>
-        <h1>{detalle.nombre ?? "Sin nombre"}</h1>
-        <p>Teléfono: {detalle.phone_number}</p>
-        <p>Tipo de contacto: {detalle.tipo_contacto ?? "—"}</p>
-        {detalle.doctor_referidor && (
-          <p>
-            Doctor referidor: {detalle.doctor_referidor.nombre} (
-            {detalle.doctor_referidor.codigo_qr})
-          </p>
-        )}
-        <p>
-          Consentimiento: {detalle.consentimiento}
-          {detalle.consentimiento_at ? ` (${formatoFecha(detalle.consentimiento_at)})` : ""}
-        </p>
-        <p>Estado: {detalle.estado}</p>
-      </section>
+      <div className="card mb-4 shadow-sm">
+        <div className="card-body">
+          <div className="d-flex justify-content-between align-items-start flex-wrap gap-2 mb-3">
+            <h1 className="h3 card-title mb-0">{detalle.nombre ?? "Sin nombre"}</h1>
+            <span className="badge bg-primary fs-6">{detalle.estado}</span>
+          </div>
+          <div className="row g-2">
+            <div className="col-12 col-md-6">
+              <p className="mb-1">
+                <strong>Teléfono:</strong> {detalle.phone_number}
+              </p>
+              <p className="mb-1">
+                <strong>Tipo de contacto:</strong> {detalle.tipo_contacto ?? "—"}
+              </p>
+              {detalle.doctor_referidor && (
+                <p className="mb-1">
+                  <strong>Doctor referidor:</strong> {detalle.doctor_referidor.nombre} (
+                  {detalle.doctor_referidor.codigo_qr})
+                </p>
+              )}
+            </div>
+            <div className="col-12 col-md-6">
+              <p className="mb-1">
+                <strong>Consentimiento:</strong> {detalle.consentimiento}
+                {detalle.consentimiento_at ? ` (${formatoFecha(detalle.consentimiento_at)})` : ""}
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
 
-      <section>
-        <h2>Ventana de conversación</h2>
-        {detalle.ventana.expirada ? (
-          <p>Ventana cerrada</p>
-        ) : (
-          <p>
-            Último mensaje: {formatoFecha(detalle.last_patient_msg_at)}. Cierra:{" "}
-            {formatoFecha(detalle.ventana.cierraAt)} (
-            {formatoRestante(detalle.ventana.horasRestantes)}).
-          </p>
-        )}
-      </section>
-
-      <section>
-        <h2>Acciones</h2>
-        {mensaje && <p className="alert alert-info">{mensaje}</p>}
-        <div>
-          <h3>Responder</h3>
-          <textarea
-            className="form-control"
-            value={textoLibre}
-            onChange={(e) => setTextoLibre(e.target.value)}
-            placeholder="Escribe tu mensaje..."
-            disabled={detalle.ventana.expirada}
-          />
-          <button className="btn btn-primary" onClick={enviarLibre} disabled={detalle.ventana.expirada}>
-            Enviar mensaje libre
-          </button>
-          <button className="btn btn-secondary" onClick={enviarPlantilla}>
-            Enviar plantilla
-          </button>
-          {detalle.ventana.expirada && (
-            <p>Mensaje libre deshabilitado (ventana expirada)</p>
+      <div className="card mb-4 shadow-sm">
+        <div className="card-header bg-light">
+          <h2 className="h5 mb-0">Ventana de conversación</h2>
+        </div>
+        <div className="card-body">
+          {detalle.ventana.expirada ? (
+            <p className="text-danger fw-semibold mb-0">Ventana cerrada</p>
+          ) : (
+            <p className="mb-0">
+              Último mensaje: {formatoFecha(detalle.last_patient_msg_at)}. Cierra:{" "}
+              {formatoFecha(detalle.ventana.cierraAt)} (
+              {formatoRestante(detalle.ventana.horasRestantes)}).
+            </p>
           )}
         </div>
-        <div>
-          <h3>Gestionar paciente</h3>
-          <button className="btn btn-danger" onClick={archivar} disabled={detalle.estado === "archivado"}>
-            {detalle.estado === "archivado" ? "Archivado" : "Archivar"}
-          </button>
-          <button className="btn btn-danger" onClick={() => setMostrarModalARCO(true)}>
-            Eliminar paciente (ARCO)
-          </button>
+      </div>
+
+      <div className="card mb-4 shadow-sm">
+        <div className="card-header bg-light">
+          <h2 className="h5 mb-0">Acciones</h2>
         </div>
-      </section>
+        <div className="card-body">
+          {mensaje && <p className="alert alert-info">{mensaje}</p>}
+          <div className="mb-4">
+            <h3 className="h6 mb-2">Responder</h3>
+            <textarea
+              className="form-control mb-3"
+              rows={3}
+              value={textoLibre}
+              onChange={(e) => setTextoLibre(e.target.value)}
+              placeholder="Escribe tu mensaje..."
+              disabled={detalle.ventana.expirada}
+            />
+            <div className="d-flex gap-2 flex-wrap mb-2">
+              <button
+                className="btn btn-primary"
+                onClick={enviarLibre}
+                disabled={detalle.ventana.expirada}
+              >
+                Enviar mensaje libre
+              </button>
+              <button className="btn btn-secondary" onClick={enviarPlantilla}>
+                Enviar plantilla
+              </button>
+            </div>
+            {detalle.ventana.expirada && (
+              <p className="text-muted small mb-0">
+                Mensaje libre deshabilitado (ventana expirada)
+              </p>
+            )}
+          </div>
+          <hr />
+          <div>
+            <h3 className="h6 mb-2">Gestionar paciente</h3>
+            <div className="d-flex gap-2 flex-wrap">
+              <button
+                className="btn btn-danger"
+                onClick={archivar}
+                disabled={detalle.estado === "archivado"}
+              >
+                {detalle.estado === "archivado" ? "Archivado" : "Archivar"}
+              </button>
+              <button
+                className="btn btn-danger"
+                onClick={() => setMostrarModalARCO(true)}
+              >
+                Eliminar paciente (ARCO)
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
 
       {mostrarModalARCO && (
-        <div className="modal" style={{ display: "block" }}>
-          <div className="modal-dialog">
+        <div
+          className="modal show"
+          style={{ display: "block", backgroundColor: "rgba(0,0,0,0.5)" }}
+          role="dialog"
+          aria-modal="true"
+        >
+          <div className="modal-dialog modal-dialog-centered">
             <div className="modal-content">
               <div className="modal-header">
-                <h3 className="modal-title">Confirmar eliminación ARCO</h3>
+                <h3 className="modal-title h5">Confirmar eliminación ARCO</h3>
               </div>
               <div className="modal-body">
                 <p>
@@ -259,46 +309,67 @@ export default function DetallePacientePage() {
                 </p>
               </div>
               <div className="modal-footer">
-                <button className="btn btn-secondary" onClick={() => setMostrarModalARCO(false)}>Cancelar</button>
-                <button className="btn btn-danger" onClick={eliminarARCO}>Confirmar eliminación</button>
+                <button
+                  className="btn btn-secondary"
+                  onClick={() => setMostrarModalARCO(false)}
+                >
+                  Cancelar
+                </button>
+                <button className="btn btn-danger" onClick={eliminarARCO}>
+                  Confirmar eliminación
+                </button>
               </div>
             </div>
           </div>
         </div>
       )}
 
-      <section>
-        <h2>Consultas</h2>
-        {consultasOrdenadas.length === 0 ? (
-          <p>Sin consultas registradas</p>
-        ) : (
-          <ul>
-            {consultasOrdenadas.map((c) => (
-              <li key={c.id}>
-                <p>{formatoFecha(c.created_at)}</p>
-                <p>{c.motivo_reportado ?? "—"}</p>
-                {c.diagnostico_doctora ? (
-                  <p>Diagnóstico: {c.diagnostico_doctora}</p>
-                ) : (
-                  <div>
-                    <textarea
-                      className="form-control"
-                      value={diagnosticos[c.id] || ""}
-                      onChange={(e) =>
-                        setDiagnosticos((prev) => ({ ...prev, [c.id]: e.target.value }))
-                      }
-                      placeholder="Escribe el diagnóstico..."
-                    />
-                    <button className="btn btn-primary" onClick={() => guardarDiagnostico(c.id)}>
-                      Guardar diagnóstico
-                    </button>
+      <div className="card mb-4 shadow-sm">
+        <div className="card-header bg-light">
+          <h2 className="h5 mb-0">Consultas</h2>
+        </div>
+        <div className="card-body">
+          {consultasOrdenadas.length === 0 ? (
+            <p className="text-muted mb-0">Sin consultas registradas</p>
+          ) : (
+            <div className="list-group list-group-flush">
+              {consultasOrdenadas.map((c) => (
+                <div key={c.id} className="list-group-item px-0 py-3">
+                  <div className="d-flex justify-content-between mb-1">
+                    <span className="text-muted small">{formatoFecha(c.created_at)}</span>
                   </div>
-                )}
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
-    </main>
+                  <p className="mb-2">
+                    <strong>Motivo:</strong> {c.motivo_reportado ?? "—"}
+                  </p>
+                  {c.diagnostico_doctora ? (
+                    <div className="alert alert-light border mb-0">
+                      <strong>Diagnóstico:</strong> {c.diagnostico_doctora}
+                    </div>
+                  ) : (
+                    <div className="mt-2">
+                      <textarea
+                        className="form-control mb-2"
+                        rows={2}
+                        value={diagnosticos[c.id] || ""}
+                        onChange={(e) =>
+                          setDiagnosticos((prev) => ({ ...prev, [c.id]: e.target.value }))
+                        }
+                        placeholder="Escribe el diagnóstico..."
+                      />
+                      <button
+                        className="btn btn-primary btn-sm"
+                        onClick={() => guardarDiagnostico(c.id)}
+                      >
+                        Guardar diagnóstico
+                      </button>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
   );
 }

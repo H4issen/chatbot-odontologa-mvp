@@ -14,7 +14,11 @@ function ResetForm({ token }: { token: string | null }) {
   const [cargando, setCargando] = useState(false);
 
   if (!token) {
-    return <p>Link inválido, solicita uno nuevo</p>;
+    return (
+      <div className="alert alert-danger" role="alert">
+        Link inválido, solicita uno nuevo
+      </div>
+    );
   }
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -48,18 +52,23 @@ function ResetForm({ token }: { token: string | null }) {
 
   if (exito) {
     return (
-      <div>
-        <p>Contraseña actualizada</p>
-        <a href="/login">Ir al inicio de sesión</a>
+      <div className="alert alert-success text-center" role="alert">
+        <p className="mb-3">Contraseña actualizada</p>
+        <a href="/login" className="btn btn-primary">
+          Ir al inicio de sesión
+        </a>
       </div>
     );
   }
 
   return (
     <form onSubmit={handleSubmit}>
-      <label>
-        Nueva contraseña (mínimo 8 caracteres)
+      <div className="mb-3">
+        <label htmlFor="password" className="form-label">
+          Nueva contraseña (mínimo 8 caracteres)
+        </label>
         <input
+          id="password"
           className="form-control"
           type="password"
           name="password"
@@ -69,10 +78,13 @@ function ResetForm({ token }: { token: string | null }) {
           onChange={(e) => setPassword(e.target.value)}
           autoComplete="new-password"
         />
-      </label>
-      <label>
-        Confirmar contraseña
+      </div>
+      <div className="mb-3">
+        <label htmlFor="password_confirm" className="form-label">
+          Confirmar contraseña
+        </label>
         <input
+          id="password_confirm"
           className="form-control"
           type="password"
           name="password_confirm"
@@ -82,9 +94,13 @@ function ResetForm({ token }: { token: string | null }) {
           onChange={(e) => setPasswordConfirm(e.target.value)}
           autoComplete="new-password"
         />
-      </label>
-      {error && <p className="alert alert-danger" role="alert">{error}</p>}
-      <button className="btn btn-primary" type="submit" disabled={cargando}>
+      </div>
+      {error && (
+        <p className="alert alert-danger mb-3" role="alert">
+          {error}
+        </p>
+      )}
+      <button className="btn btn-primary w-100" type="submit" disabled={cargando}>
         {cargando ? "Guardando..." : "Guardar contraseña"}
       </button>
     </form>
@@ -93,11 +109,16 @@ function ResetForm({ token }: { token: string | null }) {
 
 export default function ResetPage() {
   return (
-    <main className="container">
-      <h1>Restablecer contraseña</h1>
-      <Suspense fallback={<p>Cargando...</p>}>
-        <ResetFormWithToken />
-      </Suspense>
+    <main
+      className="container d-flex flex-column justify-content-center align-items-center px-3"
+      style={{ minHeight: "100dvh" }}
+    >
+      <div className="w-100" style={{ maxWidth: "420px" }}>
+        <h1 className="h3 mb-4 text-center">Restablecer contraseña</h1>
+        <Suspense fallback={<p className="text-center">Cargando...</p>}>
+          <ResetFormWithToken />
+        </Suspense>
+      </div>
     </main>
   );
 }

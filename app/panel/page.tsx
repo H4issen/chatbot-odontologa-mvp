@@ -77,17 +77,17 @@ export default function PanelPage() {
 
   if (pacientes === null) {
     return (
-      <main className="container">
-        <p>Cargando pacientes...</p>
-      </main>
+      <div className="text-center py-5">
+        <p className="text-muted">Cargando pacientes...</p>
+      </div>
     );
   }
 
   if (pacientes.length === 0) {
     return (
-      <main className="container">
-        <p>Sin pacientes registrados aún</p>
-      </main>
+      <div className="alert alert-info py-4 text-center">
+        <p className="mb-0">Sin pacientes registrados aún</p>
+      </div>
     );
   }
 
@@ -98,38 +98,43 @@ export default function PanelPage() {
   );
 
   return (
-    <main className="container">
-      <h1>Pacientes</h1>
-      <table className="table table-striped">
-        <thead>
-          <tr>
-            <th>Estado</th>
-            <th>Nombre</th>
-            <th>Teléfono</th>
-            <th>Situación</th>
-            <th>Tiempo restante</th>
-            <th>Última consulta</th>
-          </tr>
-        </thead>
-        <tbody>
-          {ordenados.map((p) => (
-            <tr
-              key={p.phone_number}
-              className={CLASE_FILA[p.ventana.semaforo]}
-              onClick={() => router.push(`/panel/${encodeURIComponent(p.phone_number)}`)}
-            >
-              <td>
-                <span className={CLASE_PUNTO[p.ventana.semaforo]}>&nbsp;</span>
-              </td>
-              <td>{p.nombre ?? "—"}</td>
-              <td>{p.phone_number}</td>
-              <td>{p.estado}</td>
-              <td>{p.ventana.expirada ? "Ventana cerrada" : formatoRestante(p.ventana.horasRestantes)}</td>
-              <td>{(p.ultimaConsulta?.motivo_reportado ?? "").slice(0, 60)}</td>
+    <div>
+      <div className="d-flex justify-content-between align-items-center mb-3">
+        <h1 className="h3 mb-0">Pacientes</h1>
+      </div>
+      <div className="table-responsive shadow-sm rounded border">
+        <table className="table table-hover table-striped mb-0 align-middle">
+          <thead className="table-light">
+            <tr>
+              <th style={{ width: "60px" }}>Estado</th>
+              <th>Nombre</th>
+              <th>Teléfono</th>
+              <th>Situación</th>
+              <th>Tiempo restante</th>
+              <th>Última consulta</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
-    </main>
+          </thead>
+          <tbody>
+            {ordenados.map((p) => (
+              <tr
+                key={p.phone_number}
+                className={CLASE_FILA[p.ventana.semaforo]}
+                style={{ cursor: "pointer" }}
+                onClick={() => router.push(`/panel/${encodeURIComponent(p.phone_number)}`)}
+              >
+                <td>
+                  <span className={CLASE_PUNTO[p.ventana.semaforo]}>&nbsp;</span>
+                </td>
+                <td className="fw-semibold">{p.nombre ?? "—"}</td>
+                <td>{p.phone_number}</td>
+                <td>{p.estado}</td>
+                <td>{p.ventana.expirada ? "Ventana cerrada" : formatoRestante(p.ventana.horasRestantes)}</td>
+                <td>{(p.ultimaConsulta?.motivo_reportado ?? "").slice(0, 60)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
   );
 }
