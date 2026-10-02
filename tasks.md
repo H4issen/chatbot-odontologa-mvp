@@ -17,7 +17,7 @@
 **Archivos a tocar:**
 - `git init` + repo privado en GitHub
 - `.gitignore` → `.env*`, `node_modules/`, `.next/`, `*.tsbuildinfo`
-- `package.json` → dependencias: `next@14`, `typescript`, `@prisma/client`, `prisma`, `zod`, `bcrypt` (nativo; T-03 lo cambió desde `bcryptjs` — ver plan B en T-46), `iron-session`, `nodemailer`, `@types/*`
+- `package.json` → dependencias: `next@14.2.35` (**pino exacto, no caret**: Railway bloquea el deploy por CVE-2025-55184 y CVE-2025-67779 que afectaban a 14.2.5), `typescript`, `@prisma/client`, `prisma`, `zod`, `bcrypt` (nativo; T-03 lo cambió desde `bcryptjs` — ver plan B en T-46), `iron-session`, `nodemailer`, `@types/*`
 - `tsconfig.json` → `strict: true`, `paths: { "@/*": ["./*"] }`
 - `.env.example` → las 15 keys exactas del plan §7.1, valores vacíos, comentarios explicativos
 - `README.md` → comandos: `npm i`, `cp .env.example .env`, `npx prisma migrate dev`, `npm run dev`
