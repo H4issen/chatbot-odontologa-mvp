@@ -92,3 +92,16 @@ Regla fallback: pide `audita en modo crítico y marca [RIESGO]/[ACLARAR]` y no d
 - El bloque "Estado 2026-10-02" de `tasks.md` T-46 tiene el detalle completo. No repetir: el bump de `next`, el deploy, el registro del webhook y la suscripción de `messages` ya están hechos.
 - Migraciones + seed son el ÚNICO bloqueo del bot (`stateMachine.ts:44-48` hace upsert antes de responder).
 - Trampas documentadas ahí: `.env` con comentario en línea, chip desconectado por WABA sin verificar, widget de Meta solo outbound, y la regla de no configurar pagos en sandbox.
+- **Actualizado 2026-10-03:** migraciones y seed YA ESTÁN aplicados (commit `3c21d82`). Los 7 criterios de T-46 pasaron, salvo el 1 que se corrigió con `a5ade5b` (raíz → redirect a `/login`). Leer el bloque "Diagnóstico 2026-10-03" de `tasks.md` antes de tocar nada.
+
+## T-47b — estado real al 2026-10-03 (NO empezar de cero)
+Todo lo siguiente YA ESTÁ HECHO y verificado. **No lo repitas:**
+- Deploy Railway activo y sano: `Deployment successful`, `main` en `a5ade5b`.
+- `GET /privacidad` → 200. `GET /` → redirige a `/login`.
+- Webhook REGISTRADO y handshake verificado (`challenge` devolvió `test123`).
+- Migraciones + seed aplicados en Neon prod. 7 tablas.
+- Healthcheck Path corregido a `/privacidad` (el `/` + redirect mataba el contenedor con SIGTERM).
+
+**ÚNICO BLOQUEO: la lista de Destinatarios en Meta se reinició.** En modo desarrollo Meta solo entrega inbound de números verificados ahí, así que el bot está mudo aunque todo lo demás esté sano. Cierra con los 4 pasos y el árbol de decisión por status del POST que están en `tasks.md` (sección T-47b).
+
+Regla de método que salió de esta sesión, aplica a todo lo que siga: **para diagnosticar, consultar el servicio con un comando y mirar el deployment ACTIVO.** El título del deploy y los logs en HISTORY mienten; de ahí vinieron cuatro hipótesis fallidas seguidas.

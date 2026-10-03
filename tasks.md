@@ -1204,6 +1204,42 @@ Todo lo que hace el bot es **mensaje de servicio** (responde a un cliente) = **1
 
 **Mensaje de bienvenida con `DOCTOR_NAME` vacío:** el texto del bot contiene `Dra. [Nombre]` literal (`lib/bot/messages.ts:5`). Con `DOCTOR_NAME` ausente en Railway, el saludo sale así. **Esperado en sandbox, no es bug** — no marcar como fallo en el criterio de T-47b.
 
+**Diagnóstico 2026-10-03 — por qué el bot sigue mudo (T-47b NO cerrada):**
+
+Estado verificado del entorno (todo sano, el problema NO es del código):
+- Deploy activo en Railway: **Deployment successful**, rama `main` en `a5ade5b`.
+- `GET /privacidad` → **200** desde la terminal. `GET /` → redirige a `/login` (commit `a5ade5b`, `app/page.tsx` con `redirect()`).
+- Handshake del webhook verificado antes: `GET /api/whatsapp?hub.mode=subscribe&hub.verify_token=…&hub.challenge=test123` devolvió `test123` (200). Endpoint y `VERIFY_TOKEN` correctos.
+- Migraciones y seed aplicados por Sonnet en `3c21d82`: 7 tablas en prod, login 200 con admin del seed, bcrypt `$2b$12$` confirmado.
+
+**Causa raíz: la lista de Destinatarios en Meta se reinició.** En modo desarrollo Meta **solo entrega mensajes entrantes de números verificados en esa lista** (API Setup → desplegable *Destinatario*). Al vaciarse, Meta tiene la conversación pero **no la reenvía al webhook**. Explica el síntoma completo: handshake OK, servidor sano, ningún `POST /api/whatsapp` en los logs, bot mudo. **El repositorio no tiene la culpa.**
+
+Trampas de esta sesión, no repetir:
+1. **Webhook ≠ número ≠ suscripción.** Son tres capas: el número (chip / test number) es la identidad de WhatsApp; el webhook es la URL donde Meta avisa; la suscripción `messages` es el permiso para enviar esos avisos. Número "conectado" + webhook registrado no garantizan entrega: falta la suscripción.
+2. **El "Token de acceso" vacío en API Setup NO es el token de la app.** Es el token **temporal** de prueba, que caduca a las 24h y por eso reaparece vacío. La app usa `META_TOKEN`, que es el token del **system user** en Railway y no caduca. No regenerarlo ni subirlo a Railway por este motivo.
+3. **Contenedores que se matan con SIGTERM tras `Ready`:** el log muestra `✓ Ready in 171ms` → `Stopping Container` → `npm error signal SIGTERM`. Causa: **Healthcheck Path en `/` + `app/page.tsx` con redirect** → el healthcheck no obtenía 200 y Railway detenía el contenedor, ciclando. **Fix aplicado: Healthcheck Path = `/privacidad`** (ruta static, 200 sin sesión ni DB). Ese era el fix, NO un redeploy.
+4. **`Auto deploy unavailable` + `Could not load branches`** en Settings → Source: no es que la rama esté mal (`main` estaba bien conectada), es la UI de Railway sin permisos para leer ramas de GitHub. El botón **Update** del upstream repo sincroniza Railway con GitHub. **Los títulos de los deployments no son confiables**: se vio el commit viejo durante varios deploys.
+5. **Lección de método (la más importante):** cuatro hipótesis fallidas antes de resolver (caché de build → coalescencia de pushes → upstream desincronizado → el redirect). Todas se discutieron sobre **logs de contenedores que ya no existían**, leídos desde *HISTORY*. El dato que faltaba era **consultar el servicio con un comando** (`Invoke-WebRequest … /privacidad` → 200) y mirar el log del deployment **activo**. **Regla: para diagnosticar, consultar el servicio y el deployment activo; el título del deploy y los logs históricos mienten.**
+6. La UI de Business Settings perdió permisos durante la sesión y se recuperó con doble verificación; el botón *Agregar número de teléfono* en WhatsApp Manager aparece deshabilitado sin rol de Control completo en la WABA (no es bloqueante para el sandbox).
+
+**Lo que falta para cerrar T-47b (todo es clic en Meta, ninguno es código):**
+1. API Setup → *Destinatario* → agregar el celular personal (NO el chip, que es el bot) y completar el SMS de verificación.
+2. *WhatsApp → Configuración* → confirmar que `messages` sigue con check (puede haberse perdido al volver a guardar el form).
+3. Widget *Enviar mensaje* → enviar al destinatario → **responder desde ese mismo chat** en el WhatsApp personal.
+4. Confirmar `POST /api/whatsapp` en los logs del deployment **activo**.
+
+**Árbol de decisión por el log (NO adivinar):**
+| Log | Significa | Acción |
+|---|---|---|
+| ningún `POST` | Meta no entregó el inbound | Repetir 1 y 2 de arriba |
+| `POST` 200, bot no contesta | inbound llegó, falla el **outbound** | Verificar que el system user tenga `whatsapp_business_messaging` + `whatsapp_business_management` sobre la WABA |
+| `POST` 401 | Firma HMAC inválida | `META_APP_SECRET` de Railway no corresponde a la app |
+| `POST` 500 | Error de runtime | Revisar variable faltante |
+
+Nota: `lib/bot/processor.ts:54` descarta en silencio cualquier mensaje que no sea `type: "text"`. Si la prueba falla, confirmar que el mensaje se envió **como texto** (una nota de voz o audio no llega al bot y no deja rastro en los logs).
+
+`NEXT_PUBLIC_BASE_URL` queda pendiente de confirmar en Railway (valor `https://chatbot-odontologa-mvp-production.up.railway.app`), pero **no es la causa del silencio**: el reset de contraseña (`app/api/auth/forgot/route.ts:69`) sí quedaría roto con ella ausente.
+
 ---
 
 ### T-47a `[infra]` (manual guiado: lo ejecuta el dueño con el arquitecto, NO el ejecutor)
