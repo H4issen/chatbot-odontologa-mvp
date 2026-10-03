@@ -20,7 +20,6 @@ Regla: adjunta SOLO lo indicado por T. 1 tarea=1 commit. Prompt base siempre:
 - T-44b: pase Bootstrap solo-CSS en todas las rutas (solo tras T-44). Adj: tasks T-44b
 - T-44c: QR Perú con número del bot + env (bloqueante go-live). Adj: tasks T-44c
 - T-45: package prod. Adj: tasks T-45 + plan §7
-- T-46: package prod + checklist deploy. Adj: tasks T-46 + plan §7
 - T-48: E2E doc 9 puntos. Adj: tasks T-48 + spec §7
 - T-49: guía doctora. Adj: tasks T-49
 
@@ -53,13 +52,14 @@ Regla: adjunta SOLO lo indicado por T. 1 tarea=1 commit. Prompt base siempre:
 - T-31: mensajes plantilla. Adj: tasks T-31 + plan §5
 - T-34: forgot sha256. Adj: tasks T-34 + plan §6
 
-## Qwen3.7/3.8 Max — OBLIGATORIAS (7, RIESGO duro)
+## Qwen3.7/3.8 Max — OBLIGATORIAS (8, RIESGO duro)
 - T-12: webhook POST HMAC. Adj: tasks T-12 + plan §3
 - T-16: rechazado ARCO. Adj: tasks T-16 + plan §4
 - T-18: motivo + SMTP. Adj: tasks T-18 + plan §4
 - T-20: recurrente. Adj: tasks T-20 + plan §4
 - T-35: reset 1h. Adj: tasks T-35 + plan §6
 - T-42: acciones ARCO. Adj: tasks T-42 + plan §2,5
+- T-46: deploy Railway migraciones + seed prod. Adj: tasks T-46 (leer el bloque "Estado 2026-10-02" COMPLETO: incluye trampas de `.env`, chip y pagos) + plan §7
 - T-47a: registrar plantilla Meta (manual guiado, YA en paralelo a T-46). Adj: tasks T-47a
 - T-47b: webhook Meta con URL de T-46 (manual guiado). Adj: tasks T-47b
 
@@ -77,10 +77,18 @@ de paciente. Decisión: fallback mínimo, la doctora reparte los QR en persona.
 - Adj cuando toque: tasks T-50 (crear al planificar v2) + plan §4.
 
 ## Alternativas si Max se agota (mismo rigor, menor costo)
-Orden de fallback para las 7 obligatorias:
+Orden de fallback para las 8 obligatorias:
 1. Sonnet 4.5 free (Antigravity, por cuota) — mejor auditor
 2. Kimi K3 (Go/ClinePass) — secuencias largas agénticas, E2E T-48
 3. DeepSeek V4 Pro (Go/ClinePass) — solo si aceptas su opt-in China; evita en auth/datos
 4. Muse Spark (Go, 45k req) — riesgo medio con alto límite
 
-Regla fallback: pide `audita en modo crítico y marca [RIESGO]/[ACLARAR]` y no despliegues a prod sin una revisión Max/Sonnet posterior en T-12, T-35, T-42, T-47b.
+Regla fallback: pide `audita en modo crítico y marca [RIESGO]/[ACLARAR]` y no despliegues a prod sin una revisión Max/Sonnet posterior en T-12, T-35, T-42, T-46, T-47b.
+
+## Excepción de mapa — T-46
+`plan_legacy/asignar_tareas.md:11` asigna T-46 a Sonnet 4.5 (grupo legacy). El dueño la delegó a Qwen Max el 2026-10-02: encaja en el fallback de línea 42 y no cambia el rigor, porque escribe en la DB de producción. Para T-46 aplica el mismo criterio que las demás obligatorias: revisión Max/Sonnet antes de dar por cerrada.
+
+## T-46 — notas de continuidad (leer antes de ejecutar)
+- El bloque "Estado 2026-10-02" de `tasks.md` T-46 tiene el detalle completo. No repetir: el bump de `next`, el deploy, el registro del webhook y la suscripción de `messages` ya están hechos.
+- Migraciones + seed son el ÚNICO bloqueo del bot (`stateMachine.ts:44-48` hace upsert antes de responder).
+- Trampas documentadas ahí: `.env` con comentario en línea, chip desconectado por WABA sin verificar, widget de Meta solo outbound, y la regla de no configurar pagos en sandbox.

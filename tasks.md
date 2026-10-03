@@ -1182,14 +1182,27 @@ Lo que falta (NO lo hizo el ejecutor menor, por regla de `plan_legacy/asignar_ta
 4. Verificar los 7 criterios de abajo, incluida la higiene de logs de la observación T-18.
 5. Commit `infra: deploy Railway migraciones y seed producción`.
 
-**Diagnóstico cerrado, no repetir:**
-- `npm run lint` está ROTO desde el origen y sigue roto: nunca hubo `eslint` ni `eslint-config-next` en `devDependencies`, ni `.eslintrc*`. `next lint` los instalaba bajo demanda y chocaba (`eslint@8.57.1` encontrado vs `peer eslint@>=9` de `eslint-config-next@16`). `AGENTS.md:8` declara `npm run lint` como verificación, así que es deuda real. Fix: `eslint@^8.57.1` + `eslint-config-next@14.2.35` + `.eslintrc.json` con `next/core-web-vitals`, en commit aparte. **Pendiente.**
-- Aviso `npm warn allow-scripts` (npm 11, solo `audit`, no bloquea; `ignore-scripts=false`): `bcrypt` no corrió `node-gyp rebuild` en local, pero el binario ya existía. En Railway compiló bien, así que no es bloqueante.
-
 **Deuda abierta al cerrar T-46 (sandbox):**
 - `SMTP_USER`, `SMTP_PASS`, `SMTP_FROM`, `DOCTOR_EMAIL` ausentes → el bot registra pacientes pero NO notifica por email. `lib/mail.ts:14,17,63` lanza `throw` si se invocan. **Bloqueante antes de entregar a la doctora (T-49).**
 - `DOCTOR_NAME` y `DOCTOR_EMAIL` ausentes → `/privacidad` muestra los fallbacks "la doctora responsable" / "el correo del consultorio" (`app/privacidad/page.tsx:5-6`). Esperado en sandbox, pero es criterio de T-46: verificar así, no marcar como fallo.
-- Allowlist de Meta pendiente: con la app en modo desarrollo solo se envía a números en la allowlist. Agregar el celular personal del dueño (NO el chip, que es el bot) en *WhatsApp → API Setup → Recipient allowlist*. **Bloquea T-47b y T-48.**
+- `NEXT_PUBLIC_BASE_URL` ausente → el reset de contraseña manda link a `localhost:3000` (`app/api/auth/forgot/route.ts:69`). Cerrar en T-46.
+- **Método de pago de Meta NO configurar en sandbox** → decisión de T-49 y a nombre de la doctora. Ver "Pagos" abajo.
+- Deuda de lint (`npm run lint` roto desde el origen) → ver "Diagnóstico cerrado".
+
+**Hallazgo crítico — por qué el bot está mudo (no es de Meta):**
+`lib/bot/stateMachine.ts:44-48` ejecuta `prisma.paciente.upsert` **antes** de elegir el mensaje de respuesta. Sin la tabla `paciente`, ese upsert explota, el error se cachea en `lib/bot/processor.ts:30-33` y el bot **no responde nada, en silencio**. Por eso los symptoms observados (nada de respuesta, sin POST nuevo en los logs de Railway) desaparecen solo con `migrate deploy`. Sin migraciones, aunque el webhook esté perfecto, el bot no contesta. **Migraciones y seed son el gate real de T-46/T-47b.**
+
+**Diagnóstico cerrado, trampas de la sesión del 2026-10-02 (no repetir):**
+1. **`npm run lint` roto desde el origen**: nunca hubo `eslint` ni `eslint-config-next` en `devDependencies`, ni `.eslintrc*`. `next lint` los instalaba bajo demanda y chocaba (`eslint@8.57.1` encontrado vs `peer eslint@>=9` de `eslint-config-next@16`). `AGENTS.md:8` declara `npm run lint` como verificación, así que es deuda real. Fix: `eslint@^8.57.1` + `eslint-config-next@14.2.35` + `.eslintrc.json` con `next/core-web-vitals`, en commit aparte. **Pendiente.**
+2. **`.env` con comentario en línea rompe los scripts que leen variables.** Todas las keys están como `KEY="valor" # comentario`. Un `Select-String '^KEY='` + `Split('=',2)` devuelve el valor **más el comentario**: `VERIFY_TOKEN` daba 109 caracteres en vez de 48 hex → el handshake devolvía `403 Forbidden` y parecía un problema de Meta o de Railway. Lectura correcta en PowerShell: `(line -replace '^KEY=','' -replace '#.*$','').Trim().Trim('"')`. **Aplica igual a `SMTP_*` y `DOCTOR_EMAIL` cuando se configuren en T-49.**
+3. **Chip "desconectado" no es hardware ni token**: es que la WABA no está verificada y no tiene método de pago, así que Meta no mantiene conectados los números personalizados en desarrollo. El chip queda **registrado y con su `PHONE_NUMBER_ID` en Railway** — plan B para producción cuando haya verificación. El sandbox usa el **test number** (prefijo `+1 555`) del desplegable "From" en *WhatsApp → API Setup*. **No borrar ni re-registrar el número**: crearía una WABA paralela y descuadraría las variables ya cargadas.
+4. **El widget "Enviar mensaje" de Meta solo prueba outbound**: manda plantillas predefinidas desde el número de prueba hacia un destinatario. **Nunca toca el webhook ni la máquina de estados**, así que no sirve para probar el bot. Para probar el bot: enviar desde el widget → **responder desde el WhatsApp personal** (ese inbound sí entra a `/api/whatsapp`) → el bot saluda con `MENSAJE_BIENVENIDA`. Confirmar con un POST en los logs de Railway, que es la señal real de T-47b.
+5. **Aviso `npm warn allow-scripts`** (npm 11, solo `audit`, no bloquea; `ignore-scripts=false`): `bcrypt` no corrió `node-gyp rebuild` en local pero el binario ya existía. En Railway compiló bien → no bloqueante.
+
+**Pagos (decisión tomada):**
+Todo lo que hace el bot es **mensaje de servicio** (responde a un cliente) = **1.000 conversaciones gratis/mes** por número de empresa. Solo los mensajes **iniciados por la empresa** fuera de la ventana de 24h consumen cuota pagada: en el MVP eso es únicamente la plantilla `reactivacion_consulta` (T-47a), volumen despreciable. **No configurar método de pago en sandbox**: implica tarjeta propia en una cuenta de pruebas que después hay que migrar a nombre de la doctora. Va en T-49.
+
+**Mensaje de bienvenida con `DOCTOR_NAME` vacío:** el texto del bot contiene `Dra. [Nombre]` literal (`lib/bot/messages.ts:5`). Con `DOCTOR_NAME` ausente en Railway, el saludo sale así. **Esperado en sandbox, no es bug** — no marcar como fallo en el criterio de T-47b.
 
 ---
 
