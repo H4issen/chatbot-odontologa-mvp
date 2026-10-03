@@ -1166,6 +1166,31 @@
 
 **Commit:** `infra: deploy Railway migraciones y seed producción`
 
+**Estado 2026-10-02 — DELEGADO a Sonnet 4.5 (falta la parte que escribe en DB):**
+
+Hecho y verificado por el ejecutor menor (space-bunny-free):
+- Proyecto Railway creado desde GitHub, rama `main`, sin plugin Postgres (se usa Neon externo). Servicio **Online**.
+- Primer deploy falló: Railway bloqueó el deploy por política de seguridad, `next@14.2.5` con CVE-2025-55184 y CVE-2025-67779 (HIGH). NO era `bcrypt`.
+- Bump a `next@14.2.35` (parche dentro de la major 14). Build local verde con las 7 rutas y `middleware` intacto. Commit `a2186f1`, merge fast-forward a `main`, push hecho.
+- Redeploy **exitoso** (Build 1:06, sin errores). `bcrypt` nativo compiló en Linux → **plan B NO requerido**.
+- Las 10 variables cargadas en Railway; 5 quedan fuera a propósito (ver "Deuda abierta" abajo).
+
+Lo que falta (NO lo hizo el ejecutor menor, por regla de `plan_legacy/asignar_tareas.md:47` — infra que escribe en prod exige Sonnet o Qwen Max):
+1. `npx prisma migrate deploy` contra la Neon rotada (misma DB que Railway, confirmado por el dueño).
+2. Seed una sola vez (admin, `consultorio_info`, 5 servicios).
+3. `NEXT_PUBLIC_BASE_URL` = URL pública del deploy, guardada en Railway Variables → **redeploy** (circularidad: la URL solo existe tras el primer deploy). Sin esto, el reset de contraseña manda link a `localhost:3000` (`app/api/auth/forgot/route.ts:69`).
+4. Verificar los 7 criterios de abajo, incluida la higiene de logs de la observación T-18.
+5. Commit `infra: deploy Railway migraciones y seed producción`.
+
+**Diagnóstico cerrado, no repetir:**
+- `npm run lint` está ROTO desde el origen y sigue roto: nunca hubo `eslint` ni `eslint-config-next` en `devDependencies`, ni `.eslintrc*`. `next lint` los instalaba bajo demanda y chocaba (`eslint@8.57.1` encontrado vs `peer eslint@>=9` de `eslint-config-next@16`). `AGENTS.md:8` declara `npm run lint` como verificación, así que es deuda real. Fix: `eslint@^8.57.1` + `eslint-config-next@14.2.35` + `.eslintrc.json` con `next/core-web-vitals`, en commit aparte. **Pendiente.**
+- Aviso `npm warn allow-scripts` (npm 11, solo `audit`, no bloquea; `ignore-scripts=false`): `bcrypt` no corrió `node-gyp rebuild` en local, pero el binario ya existía. En Railway compiló bien, así que no es bloqueante.
+
+**Deuda abierta al cerrar T-46 (sandbox):**
+- `SMTP_USER`, `SMTP_PASS`, `SMTP_FROM`, `DOCTOR_EMAIL` ausentes → el bot registra pacientes pero NO notifica por email. `lib/mail.ts:14,17,63` lanza `throw` si se invocan. **Bloqueante antes de entregar a la doctora (T-49).**
+- `DOCTOR_NAME` y `DOCTOR_EMAIL` ausentes → `/privacidad` muestra los fallbacks "la doctora responsable" / "el correo del consultorio" (`app/privacidad/page.tsx:5-6`). Esperado en sandbox, pero es criterio de T-46: verificar así, no marcar como fallo.
+- Allowlist de Meta pendiente: con la app en modo desarrollo solo se envía a números en la allowlist. Agregar el celular personal del dueño (NO el chip, que es el bot) en *WhatsApp → API Setup → Recipient allowlist*. **Bloquea T-47b y T-48.**
+
 ---
 
 ### T-47a `[infra]` (manual guiado: lo ejecuta el dueño con el arquitecto, NO el ejecutor)
